@@ -7,74 +7,87 @@ from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 import os
 
-# ----- TÜRKÇE UYUMLU FONT KAYDI -----
-font_path = os.path.join("fonts", "times.ttf")  # fonts/times.ttf yolunda olmalı
+# ----- Font Ayarı -----
+font_path = os.path.join("fonts", "times.ttf")
 pdfmetrics.registerFont(TTFont("TNR", font_path))
 
-# ----- GROQ API -----
+# ----- API Ayarı -----
 client = Groq(api_key="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")
 
-# ----- UYGULAMA BAŞLIĞI -----
+# ----- Uygulama Başlığı -----
 st.set_page_config(page_title="QuickSheet", page_icon="⚡")
-st.title("⚡ QuickSheet: AI Destekli Hızlı Worksheet Hazırlayıcı")
-st.write("Öğretmenler için saniyeler içinde özelleştirilmiş test ve etkinlik üretimi.")
+st.title("⚡ QuickSheet: AI Destekli Worksheet Hazırlayıcı")
 
-# ----- GİRİŞ FORMU -----
+# ----- Giriş Alanları -----
 level = st.selectbox("Dil Seviyesi", ["A1", "A2", "B1", "B2", "C1"])
 topic = st.text_input("Konu (örnek: 'Passive Voice')")
 skill = st.selectbox("Beceri", ["Reading", "Grammar", "Vocabulary", "Writing"])
 
-# Sadece Reading'de klasik soruyu göster
 if skill == "Reading":
-    question_options = ["Multiple Choice", "Fill in the Blanks", "True/False", "Open-Ended"]
+    question_options = ["Multiple Choice", "Fill in the Blanks", "True / False", "Open-ended (Short Answer)"]
 else:
-    question_options = ["Multiple Choice", "Fill in the Blanks", "True/False"]
+    question_options = ["Multiple Choice", "Fill in the Blanks", "True / False"]
 
 question_type = st.selectbox("Soru Türü", question_options)
 
-# Test oluşturma modu: hazır mı, kendi metni mi?
 mode = st.radio("Test Tipi", ["Otomatik Üret", "Kendi Metnimden Test Üret"])
 custom_text = ""
 if mode == "Kendi Metnimden Test Üret":
-    custom_text = st.text_area("📝 Kendi İngilizce Metninizi Buraya Yapıştırın", height=200, key="user_input_text")
+    custom_text = st.text_area("📝 İngilizce metninizi buraya yapıştırın", height=200, key="user_input_text")
 
-# PDF çıktı fonksiyonu
-def save_to_pdf(material_text, level, skill, question_type, topic):
+# ----- PDF Üretim Fonksiyonu -----
+def save_to_pdf(material_text, level, skill, question_type, topic, custom_text=None):
     buffer = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     c = canvas.Canvas(buffer.name, pagesize=A4)
     width, height = A4
     margin_x = 50
     y = height - 50
 
-    # Başlık
     c.setFont("TNR", 16)
     c.drawCentredString(width / 2, y, "⚡ QuickSheet Worksheet")
     y -= 30
 
-    # Konu başlığı
     c.setFont("TNR", 12)
     c.drawString(margin_x, y, f"Topic: {topic}")
     y -= 20
 
-    # Ad Soyad / Tarih
     c.setFont("TNR", 11)
     c.drawString(margin_x, y, "Full Name / Class / Number: __________________________")
     c.drawRightString(width - margin_x, y, "Date: ____________")
     y -= 30
 
-    # Yatay çizgi
-    c.setLineWidth(0.5)
-    c.line(margin_x, y, width - margin_x, y)
-    y -= 20
+    if custom_text and custom_text.strip():
+        c.setFont("TNR", 12)
+        c.drawString(margin_x, y, "📘 Reading Text:")
+        y -= 20
+        c.setFont("TNR", 11)
+        text_lines = custom_text.strip().splitlines()
+        for line in text_lines:
+            if y < 50:
+                c.showPage()
+                y = height - 50
+                c.setFont("TNR", 11)
+            wrapped = []
+            while len(line) > 100:
+                split_index = line[:100].rfind(" ")
+                if split_index == -1:
+                    split_index = 100
+                wrapped.append(line[:split_index])
+                line = line[split_index:].strip()
+            wrapped.append(line)
+            for wrapped_line in wrapped:
+                c.drawString(margin_x, y, wrapped_line)
+                y -= 16
+        y -= 10
+        c.setLineWidth(0.5)
+        c.line(margin_x, y, width - margin_x, y)
+        y -= 25
 
-    # Açıklama
     c.setFont("TNR", 11)
     c.drawString(margin_x, y, "📌 Instructions: Answer the following questions.")
     y -= 25
 
-    # --- 🔥 Cevap Anahtarı ve Başlık Temizleme ---
-
-    # 1. Answer Key ve sonrasını sil
+    # Cevap anahtarı ve başlık temizliği
     lower_text = material_text.lower()
     cut_keywords = ["answer key", "correct answers", "answers:"]
     cut_index = len(material_text)
@@ -84,7 +97,6 @@ def save_to_pdf(material_text, level, skill, question_type, topic):
             cut_index = idx
     material_cleaned = material_text[:cut_index]
 
-    # 2. Gereksiz başlıkları sil
     lines = material_cleaned.splitlines()
     cleaned_lines = []
     for line in lines:
@@ -93,7 +105,6 @@ def save_to_pdf(material_text, level, skill, question_type, topic):
             continue
         cleaned_lines.append(line)
 
-    # 3. PDF’e satırları yaz
     c.setFont("TNR", 11)
     for line in cleaned_lines:
         wrapped = []
@@ -104,7 +115,6 @@ def save_to_pdf(material_text, level, skill, question_type, topic):
             wrapped.append(line[:split_index])
             line = line[split_index:].strip()
         wrapped.append(line)
-
         for wrapped_line in wrapped:
             if y < 50:
                 c.showPage()
@@ -116,9 +126,9 @@ def save_to_pdf(material_text, level, skill, question_type, topic):
     c.save()
     return buffer.name
 
-# Materyal üretimi butonu
+# ----- Materyal Üretme -----
 if st.button("✨ Testi Üret"):
-    with st.spinner("Yapay zekâ içerik üretiyor..."):
+    with st.spinner("İçerik üretiliyor..."):
         if mode == "Otomatik Üret":
             prompt = f"""
             Create a {question_type} activity for a {level} level English learner about "{topic}", focused on {skill} skills.
@@ -133,7 +143,7 @@ if st.button("✨ Testi Üret"):
             {custom_text}
             """
         else:
-            st.warning("Lütfen metin girin.")
+            st.warning("Lütfen geçerli bir metin girin.")
             st.stop()
 
         try:
@@ -147,7 +157,7 @@ if st.button("✨ Testi Üret"):
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# Sonucu göster ve PDF indir
+# ----- Sonuç Gösterme ve PDF Butonu -----
 if "material_result" in st.session_state:
     st.markdown("### ✅ Üretilen Materyal:")
     st.text_area("Materyal", st.session_state["material_result"], height=400, key="material_output")
@@ -158,7 +168,8 @@ if "material_result" in st.session_state:
             level=level,
             skill=skill,
             question_type=question_type,
-            topic=topic
+            topic=topic,
+            custom_text=custom_text if mode == "Kendi Metnimden Test Üret" else None
         )
         with open(pdf_path, "rb") as f:
-            st.download_button("İndir (PDF)", f, file_name="worksheet.pdf")
+            st.download_button("İndir (PDF)", f, file_name="quicksheet.pdf")
