@@ -26,7 +26,8 @@ with tab1:
     level = st.selectbox("Dil Seviyesi", ["A1", "A2", "B1", "B2", "C1"])
     topic = st.text_input("Konu (örnek: 'Passive Voice')")
     skill = st.selectbox("Beceri", ["Reading", "Grammar", "Vocabulary", "Writing"])
-    question_type = st.selectbox("Soru Türü", ["Multiple Choice", "Fill in the Blanks", "True / False"])level = st.selectbox("Dil Seviyesi", ["A1", "A2", "B1", "B2", "C1"])
+    question_type = st.selectbox("Soru Türü", ["Multiple Choice", "Fill in the Blanks", "True / False"])
+    level = st.selectbox("Dil Seviyesi", ["A1", "A2", "B1", "B2", "C1"])
 
 with tab2:
     meb_grade = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
