@@ -78,7 +78,18 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
-    now = datetime.now().strftime("%d.%m.%Y - %H:%M")
+    now_display = datetime.now().strftime("%d.%m.%Y - %H:%M")
+    
+    # Dosya adı belirleme
+    base_name = "quicksheet"
+    if level and topic and skill:
+        file_name = f"{base_name}_{level}_{topic.replace(' ', '')}_{skill}.pdf"
+    elif meb_grade and selected_unit:
+        file_name = f"{base_name}_{meb_grade.replace(' ', '')}_{selected_unit.replace(' ', '').replace(':', '')}_{skill}.pdf"
+    else:
+        file_name = f"{base_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+
+    # Geçici dosya
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
 
@@ -87,13 +98,12 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     margin_x = 40
     y = height - 80
 
-    # Tarih ve Başlık
-    c.setFont("Times-Roman", 10)
-    c.drawRightString(width - margin_x, height - 50, f"Tarih: {now}")
-    c.setFont("Times-Bold", 14)
+    c.setFont("TNR", 10)
+    c.drawRightString(width - margin_x, height - 50, f"Tarih: {now_display}")
+    c.setFont("TNR", 14)
     c.drawString(margin_x, y, "QuickSheet Worksheet")
     y -= 30
-    c.setFont("Times-Roman", 12)
+    c.setFont("TNR", 12)
 
     if meb_grade and selected_unit:
         c.drawString(margin_x, y, f"Sınıf: {meb_grade}")
@@ -111,30 +121,30 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
         y -= 30
 
     if custom_text:
-        c.setFont("Times-Bold", 12)
+        c.setFont("TNR", 12)
         c.drawString(margin_x, y, "Metin:")
         y -= 20
-        c.setFont("Times-Roman", 11)
+        c.setFont("TNR", 11)
         for line in custom_text.split("\n"):
             c.drawString(margin_x, y, line.strip())
             y -= 15
         y -= 10
 
-    c.setFont("Times-Bold", 12)
+    c.setFont("TNR", 12)
     c.drawString(margin_x, y, "Alıştırma:")
     y -= 20
-    c.setFont("Times-Roman", 11)
+    c.setFont("TNR", 11)
     for line in content.split("\n"):
         if y < 50:
             c.showPage()
             y = height - 50
-            c.setFont("Times-Roman", 11)
+            c.setFont("TNR", 11)
         c.drawString(margin_x, y, line.strip())
         y -= 15
 
     c.save()
-    return filename
-
+    return filename, file_name
+                    
 # TEST ÜRET
 if st.button("✨ Testi Üret"):
     if mode == "Otomatik Üret":
@@ -184,15 +194,17 @@ Text:
 # PDF BUTONU
 if "material_result" in st.session_state:
     if st.button("📄 PDF Olarak İndir"):
-        pdf_path = save_to_pdf(
-            st.session_state["material_result"],
-            level=level,
-            skill=skill,
-            question_type=question_type,
-            topic=topic,
-            meb_grade=meb_grade,
-            selected_unit=selected_unit,
-            custom_text=custom_text
+        pdf_path, file_name = save_to_pdf(
+            content=st.session_state["material_result"],
+            level=level if "level" in locals() else None,
+            skill=skill if "skill" in locals() else None,
+            question_type=question_type if "question_type" in locals() else None,
+            topic=topic if "topic" in locals() else None,
+            meb_grade=meb_grade if "meb_grade" in locals() else None,
+            selected_unit=selected_unit if "selected_unit" in locals() else None,
+            custom_text=custom_text if "custom_text" in locals() else None
         )
+
         with open(pdf_path, "rb") as f:
-            st.download_button("İndir (PDF)", f, file_name=os.path.basename(pdf_path))
+            st.download_button("İndir (PDF)", f, file_name=file_name)
+
