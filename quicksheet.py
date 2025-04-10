@@ -6,6 +6,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 import os
+import tempfile
 
 # Font ayarı
 font_path = os.path.join("fonts", "times.ttf")
