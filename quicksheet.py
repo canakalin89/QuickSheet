@@ -187,7 +187,7 @@ if "prompt" in locals():
         except Exception as e:
             st.error(f"Bir hata oluştu: {e}")
 
-        elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
+    elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
             prompt = f"""
             Use the following text to create a {question_type} activity for a {level} level English learner, focused on {skill} skills.
             Only use this text as source material. Include a clear title, the activity itself, and an answer key.
