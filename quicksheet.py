@@ -7,21 +7,18 @@ from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 import os
 
-# Font Ayarı
+# Font ayarı
 font_path = os.path.join("fonts", "times.ttf")
 pdfmetrics.registerFont(TTFont("TNR", font_path))
 
 # Groq API
 client = Groq(api_key="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")
 
-# Sayfa Başlığı
+# Sayfa başlığı
 st.set_page_config(page_title="QuickSheet", page_icon="⚡")
 st.title("⚡ QuickSheet: AI Destekli Worksheet Hazırlayıcı")
 
-# Sekmeler
-tab1, tab2 = st.tabs(["🌍 Seviye Bazlı", "📘 MEB Müfredatlı"])
-
-# ----- SORU TÜRLERİ (Beceriye Göre Dinamik) -----
+# Beceriye göre soru türleri
 question_type_by_skill = {
     "Reading": ["Multiple Choice", "Fill in the Blanks", "True / False", "Open-ended (Short Answer)"],
     "Listening": ["Multiple Choice", "Fill in the Blanks (from audio)", "True / False", "Matching", "Ordering Events", "Sentence Completion"],
@@ -31,15 +28,24 @@ question_type_by_skill = {
     "Vocabulary": ["Matching", "Word Formation", "Synonym/Antonym", "Fill in the Blanks"]
 }
 
-# ----- SEVİYE BAZLI -----
-with tab1:
+# Mod seçimi
+mode_selection = st.radio("Mod Seçimi", ["🌍 Seviye Bazlı", "📘 MEB Müfredatlı"], horizontal=True)
+
+level = topic = meb_grade = selected_unit = skill = question_type = None
+
+# Ortak metin alanı
+mode = st.radio("Test Tipi", ["Otomatik Üret", "Kendi Metnimden Test Üret"])
+custom_text = st.text_area("📝 İngilizce metninizi buraya yapıştırın", height=200) if mode == "Kendi Metnimden Test Üret" else ""
+
+# SEVİYE BAZLI
+if mode_selection == "🌍 Seviye Bazlı":
     level = st.selectbox("Dil Seviyesi", ["A1", "A2", "B1", "B2", "C1"])
     topic = st.text_input("Konu (örnek: 'Passive Voice')")
     skill = st.selectbox("Beceri", list(question_type_by_skill.keys()))
     question_type = st.selectbox("Soru Türü", question_type_by_skill[skill])
 
-# ----- MEB BAZLI -----
-with tab2:
+# MEB MÜFREDATLI
+elif mode_selection == "📘 MEB Müfredatlı":
     meb_grade = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
     units_by_grade = {
         "9. Sınıf": [
@@ -56,14 +62,10 @@ with tab2:
         ]
     }
     selected_unit = st.selectbox("Ünite Seç", units_by_grade.get(meb_grade, []))
-    skill = st.selectbox("Beceri (MEB)", list(question_type_by_skill.keys()), key="meb_skill")
+    skill = st.selectbox("Beceri", list(question_type_by_skill.keys()), key="meb_skill")
     question_type = st.selectbox("Soru Türü", question_type_by_skill[skill], key="meb_qtype")
 
-# ----- MODE ve KULLANICI METNİ -----
-mode = st.radio("Test Tipi", ["Otomatik Üret", "Kendi Metnimden Test Üret"])
-custom_text = st.text_area("📝 İngilizce metninizi buraya yapıştırın", height=200) if mode == "Kendi Metnimden Test Üret" else ""
-
-# ----- MEB İçerikleri (Genişletilebilir) -----
+# MEB prompt verisi
 meb_unit_prompts = {
     "Theme 1: Studying Abroad": {
         "vocab": "countries, nationalities, languages, family members, directions",
@@ -72,18 +74,16 @@ meb_unit_prompts = {
     }
 }
 
-# ----- PDF OLUŞTUR -----
+# PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
     now = datetime.now().strftime("%d.%m.%Y - %H:%M")
     filename = f"/mnt/data/QuickSheet_{datetime.now().strftime('%d%m%Y_%H%M')}.pdf"
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
-
     margin_x = 40
     y = height - 80
 
-    # Başlık ve Tarih
     c.setFont("Times-Roman", 10)
     c.drawRightString(width - margin_x, height - 50, f"Tarih: {now}")
     c.setFont("Times-Bold", 14)
@@ -131,10 +131,10 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     c.save()
     return filename
 
-# ----- PROMPT ve AI İŞLEMİ -----
+# TEST ÜRET
 if st.button("✨ Testi Üret"):
     if mode == "Otomatik Üret":
-        if selected_unit in meb_unit_prompts:
+        if mode_selection == "📘 MEB Müfredatlı" and selected_unit in meb_unit_prompts:
             unit_info = meb_unit_prompts[selected_unit]
             prompt = f"""
 You are an experienced English teacher creating worksheets aligned with the Turkish MEB {meb_grade} curriculum.
@@ -160,7 +160,7 @@ Text:
 {custom_text}
 """
     else:
-        st.warning("Lütfen geçerli bir giriş yapın.")
+        st.warning("Lütfen geçerli bir seçim veya metin girin.")
         st.stop()
 
     with st.spinner("Yapay zekâ içerik üretiyor..."):
@@ -177,18 +177,18 @@ Text:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# ----- PDF İNDİRME -----
+# PDF BUTONU
 if "material_result" in st.session_state:
     if st.button("📄 PDF Olarak İndir"):
         pdf_path = save_to_pdf(
             st.session_state["material_result"],
-            level=level if "level" in locals() else None,
+            level=level,
             skill=skill,
             question_type=question_type,
-            topic=topic if "topic" in locals() else None,
-            meb_grade=meb_grade if "meb_grade" in locals() else None,
-            selected_unit=selected_unit if "selected_unit" in locals() else None,
-            custom_text=custom_text if "custom_text" in locals() else None
+            topic=topic,
+            meb_grade=meb_grade,
+            selected_unit=selected_unit,
+            custom_text=custom_text
         )
         with open(pdf_path, "rb") as f:
             st.download_button("İndir (PDF)", f, file_name=os.path.basename(pdf_path))
