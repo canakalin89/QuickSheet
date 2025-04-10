@@ -78,12 +78,15 @@ meb_unit_prompts = {
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
     now = datetime.now().strftime("%d.%m.%Y - %H:%M")
-    filename = f"/mnt/data/QuickSheet_{datetime.now().strftime('%d%m%Y_%H%M')}.pdf"
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    filename = temp_file.name
+
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
     margin_x = 40
     y = height - 80
 
+    # Tarih ve Başlık
     c.setFont("Times-Roman", 10)
     c.drawRightString(width - margin_x, height - 50, f"Tarih: {now}")
     c.setFont("Times-Bold", 14)
