@@ -131,9 +131,17 @@ if st.button("✨ Testi Üret"):
     with st.spinner("İçerik üretiliyor..."):
         if mode == "Otomatik Üret":
             prompt = f"""
-            Create a {question_type} activity for a {level} level English learner about "{topic}", focused on {skill} skills.
-            Include a clear title, the activity itself, and an answer key.
-            """
+        You are an expert English teacher preparing worksheets for students.
+        Create a {question_type} activity for a {level} level English learner.
+        The topic is: "{topic}", and it should focus strictly on that.
+        This worksheet must be suitable for {skill} skills.
+
+        Do not include any other grammar structure, tense, or unrelated vocabulary.
+        For example, if the topic is "irregular verbs in past tense", only use past simple forms like "went", "took", "ate".
+        Avoid mixing tenses (e.g., present simple), and do not use content outside of the given topic.
+
+        Provide only the activity and instructions. Format it for direct use in class.
+        """
         elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
             prompt = f"""
             Use the following text to create a {question_type} activity for a {level} level English learner, focused on {skill} skills.
