@@ -49,19 +49,52 @@ if mode_selection == "🌍 Seviye Bazlı":
 elif mode_selection == "📘 MEB Müfredatlı":
     meb_grade = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
     units_by_grade = {
-        "9. Sınıf": [
-            "Theme 1: Studying Abroad",
-            "Theme 2: My Environment",
-            "Theme 3: Movies",
-            "Theme 4: Human In Nature",
-            "Theme 5: Inspirational People",
-            "Theme 6: Bridging Cultures",
-            "Theme 7: World Heritage",
-            "Theme 8: Emergency and Health Problems",
-            "Theme 9: Invitations and Celebrations",
-            "Theme 10: Television and Social Media"
-        ]
-    }
+    "9. Sınıf": [
+        "Theme 1: Studying Abroad",
+        "Theme 2: My Environment",
+        "Theme 3: Movies",
+        "Theme 4: Human In Nature",
+        "Theme 5: Inspirational People",
+        "Theme 6: Bridging Cultures",
+        "Theme 7: World Heritage",
+        "Theme 8: Emergency and Health Problems",
+        "Theme 9: Invitations and Celebrations",
+        "Theme 10: Television and Social Media"
+    ],
+    "10. Sınıf": [
+        "Theme 1: School Life",
+        "Theme 2: Plans",
+        "Theme 3: Legendary Figure",
+        "Theme 4: Traditions",
+        "Theme 5: Travel",
+        "Theme 6: Food and Festivals",
+        "Theme 7: Digital Era",
+        "Theme 8: Modern Heroes and Heroines",
+        "Theme 9: Shopping"
+    ],
+    "11. Sınıf": [
+        "Theme 1: Future Jobs",
+        "Theme 2: Hobbies and Skills",
+        "Theme 3: Hard Times",
+        "Theme 4: What a Life",
+        "Theme 5: Back to School",
+        "Theme 6: Open Your Heart",
+        "Theme 7: World Heritage",
+        "Theme 8: Sports"
+    ],
+    "12. Sınıf": [
+        "Theme 1: Music",
+        "Theme 2: Friendship",
+        "Theme 3: Human Rights",
+        "Theme 4: Our World",
+        "Theme 5: Psychology",
+        "Theme 6: Favors",
+        "Theme 7: News Stories",
+        "Theme 8: Alternative Energy",
+        "Theme 9: Technology Addiction",
+        "Theme 10: Manners"
+    ]
+}
     selected_unit = st.selectbox("Ünite Seç", units_by_grade.get(meb_grade, []))
     skill = st.selectbox("Beceri", list(question_type_by_skill.keys()), key="meb_skill")
     question_type = st.selectbox("Soru Türü", question_type_by_skill[skill], key="meb_qtype")
