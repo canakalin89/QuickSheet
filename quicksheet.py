@@ -67,31 +67,34 @@ elif mode_selection == "📘 MEB Müfredatlı":
         "Theme 3: Legendary Figure",
         "Theme 4: Traditions",
         "Theme 5: Travel",
-        "Theme 6: Food and Festivals",
-        "Theme 7: Digital Era",
-        "Theme 8: Modern Heroes and Heroines",
-        "Theme 9: Shopping"
+        "Theme 6: Helpful Tips",
+        "Theme 7: Food and Festivals",
+        "Theme 8: Digital Era",
+        "Theme 9: Modern Heroes and Heroines",
+        "Theme 10: Shopping"
     ],
     "11. Sınıf": [
         "Theme 1: Future Jobs",
         "Theme 2: Hobbies and Skills",
         "Theme 3: Hard Times",
         "Theme 4: What a Life",
-        "Theme 5: Back to School",
+        "Theme 5: Back to the Past",
         "Theme 6: Open Your Heart",
-        "Theme 7: World Heritage",
-        "Theme 8: Sports"
+        "Theme 7: Facts about Turkiye",
+        "Theme 8: Sports",
+        "Theme 9: My Friends",
+        "Theme 10: Values and Norms"
     ],
     "12. Sınıf": [
         "Theme 1: Music",
         "Theme 2: Friendship",
         "Theme 3: Human Rights",
-        "Theme 4: Our World",
+        "Theme 4: Coming Soon",
         "Theme 5: Psychology",
         "Theme 6: Favors",
         "Theme 7: News Stories",
         "Theme 8: Alternative Energy",
-        "Theme 9: Technology Addiction",
+        "Theme 9: Technology",
         "Theme 10: Manners"
     ]
 }
