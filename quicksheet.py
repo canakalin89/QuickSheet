@@ -328,6 +328,28 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     else:
         file_name = f"{base_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
 
+# AI çıktısını satır satır temizle
+cleaned_lines = []
+in_answer_section = False
+
+for line in content.splitlines():
+    lower = line.strip().lower()
+
+    # Cevap anahtarı başladığı anda sonrasını alma
+    if any(lower.startswith(key) for key in ["answer key", "answers:", "correct answers", "answer:"]):
+        in_answer_section = True
+        continue
+
+    # Cevap satırları: 1) A 2) B vs. → atla
+    if in_answer_section or lower[:3] in ["1)", "2)", "3)", "4)", "5)"]:
+        continue
+
+    # "Answer:" gibi inline ifadeleri kaldır
+    if "answer:" in lower:
+        continue
+
+    cleaned_lines.append(line)
+                    
     # Geçici dosya
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
