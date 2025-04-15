@@ -102,12 +102,213 @@ elif mode_selection == "📘 MEB Müfredatlı":
     skill = st.selectbox("Beceri", list(question_type_by_skill.keys()), key="meb_skill")
     question_type = st.selectbox("Soru Türü", question_type_by_skill[skill], key="meb_qtype")
 
-# MEB prompt verisi
 meb_unit_prompts = {
+    # 9. Sınıf
     "Theme 1: Studying Abroad": {
-        "vocab": "countries, nationalities, languages, family members, directions",
-        "functions": "introducing oneself and family, talking about possessions, asking and giving directions",
-        "grammar": "verb to be, have got, there is/are, prepositions of place, imperatives"
+        "functions": "Introducing yourself and others, talking about possessions, asking for and giving directions",
+        "vocab": "countries, nationalities, family members, places, directions",
+        "grammar": "verb to be, possessives, there is/are, prepositions"
+    },
+    "Theme 2: My Environment": {
+        "functions": "Describing environment, asking locations, making comparisons",
+        "vocab": "places in town, adjectives, environment-related words",
+        "grammar": "comparatives, superlatives, prepositions of place"
+    },
+    "Theme 3: Movies": {
+        "functions": "Talking about movies, giving opinions, making preferences",
+        "vocab": "film genres, adjectives, cinema vocabulary",
+        "grammar": "simple present, like/love/hate + gerund"
+    },
+    "Theme 4: Human In Nature": {
+        "functions": "Talking about daily routines, abilities, natural disasters",
+        "vocab": "nature, abilities, weather, disasters",
+        "grammar": "can/can’t, adverbs of frequency, present simple"
+    },
+    "Theme 5: Inspirational People": {
+        "functions": "Describing people, expressing opinions, comparisons",
+        "vocab": "personality traits, professions, appearances",
+        "grammar": "present continuous, comparatives, superlatives"
+    },
+    "Theme 6: Bridging Cultures": {
+        "functions": "Describing cities, discussing cultural differences",
+        "vocab": "food, travel, holiday expressions",
+        "grammar": "there is/are, imperatives, should"
+    },
+    "Theme 7: World Heritage": {
+        "functions": "Describing historical places, talking about past events",
+        "vocab": "history, culture, heritage-related words",
+        "grammar": "simple past, wh- questions"
+    },
+    "Theme 8: Emergency and Health Problems": {
+        "functions": "Giving advice, talking about emergencies, expressing obligations",
+        "vocab": "illnesses, accidents, hospital items",
+        "grammar": "should/shouldn’t, must/mustn’t"
+    },
+    "Theme 9: Invitations and Celebrations": {
+        "functions": "Making and refusing invitations, talking about celebrations",
+        "vocab": "party items, dates, invitation phrases",
+        "grammar": "going to, future plans, can/may"
+    },
+    "Theme 10: Television and Social Media": {
+        "functions": "Giving opinions, discussing media habits, interrupting",
+        "vocab": "TV programs, social media terms, internet slang",
+        "grammar": "will, modals for opinion"
+    },
+
+    # 10. Sınıf
+    "Theme 1: School Life": {
+        "functions": "Exchanging personal information in both formal and informal language, taking part in a conversation in everyday life situations",
+        "vocab": "school subjects, daily routines, classroom items, club activities",
+        "grammar": "simple present tense, wh- questions, adverbs of frequency"
+    },
+    "Theme 2: Plans": {
+        "functions": "Describing future plans and arrangements, expressing unplanned situations",
+        "vocab": "future time expressions, calendar terms, appointments",
+        "grammar": "be going to, will, present continuous"
+    },
+    "Theme 3: Legendary Figure": {
+        "functions": "Describing past activities and events, telling life stories",
+        "vocab": "biographical words, historical figures, character traits",
+        "grammar": "simple past, past continuous, time clauses"
+    },
+    "Theme 4: Traditions": {
+        "functions": "Describing cultural elements, talking about routines in the past",
+        "vocab": "festivals, cultural practices, traditional activities",
+        "grammar": "used to, past simple, comparatives"
+    },
+    "Theme 5: Travel": {
+        "functions": "Talking about travel experiences, making and confirming travel plans",
+        "vocab": "transportation, accommodation, itinerary",
+        "grammar": "present perfect, past simple, modals"
+    },
+    "Theme 6: Helpful Tips": {
+        "functions": "Giving and receiving advice, talking about consequences and obligations",
+        "vocab": "rules, tips, warning expressions",
+        "grammar": "modals (should, must), conditionals (type 1)"
+    },
+    "Theme 7: Food and Festivals": {
+        "functions": "Describing cooking processes, talking about national/international festivals",
+        "vocab": "recipes, ingredients, cultural celebrations",
+        "grammar": "passive voice, sequencing adverbs"
+    },
+    "Theme 8: Digital Era": {
+        "functions": "Stating preferences and opinions, discussing technology’s impact",
+        "vocab": "digital tools, online habits, social media",
+        "grammar": "present perfect, comparatives, cause-effect conjunctions"
+    },
+    "Theme 9: Modern Heroes and Heroines": {
+        "functions": "Talking about imaginary situations, expressing wishes and desires",
+        "vocab": "heroic traits, inspirational people, hypothetical scenarios",
+        "grammar": "second conditional, wish / if only"
+    },
+    "Theme 10: Shopping": {
+        "functions": "Making comparisons, shopping dialogs, describing objects",
+        "vocab": "clothing, stores, product descriptions",
+        "grammar": "comparatives, too/enough, present continuous"
+    },
+
+    # 11. Sınıf
+    "Theme 1: Future Jobs": {
+        "functions": "Talking about future career preferences and qualifications",
+        "vocab": "professions, workplace vocabulary, job skills",
+        "grammar": "will, be going to, modals (can, must)"
+    },
+    "Theme 2: Hobbies and Skills": {
+        "functions": "Describing hobbies, skills and abilities",
+        "vocab": "leisure activities, talents, personal preferences",
+        "grammar": "can, could, be able to, present perfect"
+    },
+    "Theme 3: Hard Times": {
+        "functions": "Describing past events, talking about difficulties and natural disasters",
+        "vocab": "disasters, accidents, emergency vocabulary",
+        "grammar": "past continuous, simple past"
+    },
+    "Theme 4: What a Life": {
+        "functions": "Narrating life events, giving biographical details",
+        "vocab": "life stages, biography vocabulary",
+        "grammar": "past perfect, time clauses"
+    },
+    "Theme 5: Back to the Past": {
+        "functions": "Describing historical events and figures",
+        "vocab": "history, important dates, national figures",
+        "grammar": "past simple, passive voice"
+    },
+    "Theme 6: Open Your Heart": {
+        "functions": "Expressing feelings, giving advice about emotional problems",
+        "vocab": "feelings, mental health, personal issues",
+        "grammar": "wish / if only, second conditional"
+    },
+    "Theme 7: Facts about Turkiye": {
+        "functions": "Giving information about Türkiye's geography, culture and traditions",
+        "vocab": "geographical terms, cities, landmarks",
+        "grammar": "relative clauses, present simple"
+    },
+    "Theme 8: Sports": {
+        "functions": "Talking about sports preferences, achievements and competitions",
+        "vocab": "sports types, equipment, medals",
+        "grammar": "simple present, adverbs of manner"
+    },
+    "Theme 9: My Friends": {
+        "functions": "Describing friendships and social relationships",
+        "vocab": "character traits, social behaviors",
+        "grammar": "present simple, comparative adjectives"
+    },
+    "Theme 10: Values and Norms": {
+        "functions": "Discussing moral values and cultural norms",
+        "vocab": "respect, honesty, social behavior",
+        "grammar": "modals (should/must), conditionals"
+    },
+
+    # 12. Sınıf
+    "Theme 1: Music": {
+        "functions": "Expressing musical preferences, talking about genres",
+        "vocab": "music types, instruments, moods",
+        "grammar": "gerunds and infinitives, adjective clauses"
+    },
+    "Theme 2: Friendship": {
+        "functions": "Describing friendships, evaluating personal qualities",
+        "vocab": "personality, friendship qualities",
+        "grammar": "modals of deduction, cause/effect connectors"
+    },
+    "Theme 3: Human Rights": {
+        "functions": "Discussing rights, equality and responsibilities",
+        "vocab": "rights, freedoms, social issues",
+        "grammar": "passive voice, relative clauses"
+    },
+    "Theme 4: Coming Soon": {
+        "functions": "Making predictions about future technologies and media",
+        "vocab": "film/media terms, tech tools",
+        "grammar": "future tense, sequencing adverbs"
+    },
+    "Theme 5: Psychology": {
+        "functions": "Describing emotions, giving advice about well-being",
+        "vocab": "mental health, emotional states",
+        "grammar": "present perfect continuous, modals of advice"
+    },
+    "Theme 6: Favors": {
+        "functions": "Making polite requests, offering help",
+        "vocab": "favor expressions, polite phrases",
+        "grammar": "would you mind / could you / would you"
+    },
+    "Theme 7: News Stories": {
+        "functions": "Reporting past events, understanding headlines",
+        "vocab": "journalistic terms, reporting phrases",
+        "grammar": "past perfect, reported speech"
+    },
+    "Theme 8: Alternative Energy": {
+        "functions": "Discussing environment and energy sources",
+        "vocab": "renewable sources, pollution, global warming",
+        "grammar": "comparatives, passive voice"
+    },
+    "Theme 9: Technology": {
+        "functions": "Describing modern technology and its effects",
+        "vocab": "gadgets, artificial intelligence, internet tools",
+        "grammar": "future continuous, if-clauses (type 1)"
+    },
+    "Theme 10: Manners": {
+        "functions": "Talking about manners and social rules",
+        "vocab": "etiquette, behavior norms, politeness",
+        "grammar": "wish / if only, modals for past"
     }
 }
 
@@ -182,18 +383,84 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     return filename, file_name
                     
 # TEST ÜRET
-if st.button("✨ Testi Üret"):
-    if mode == "Otomatik Üret":
-        if mode_selection == "📘 MEB Müfredatlı" and selected_unit in meb_unit_prompts:
-            unit_info = meb_unit_prompts[selected_unit]
-            prompt = f"""
-You are an experienced English teacher creating worksheets aligned with the Turkish MEB {meb_grade} curriculum.
-Create a {question_type} activity for Unit: "{selected_unit}".
-Functions: {unit_info['functions']}
-Vocabulary: {unit_info['vocab']}
-Grammar Focus: {unit_info['grammar']}
-Skill: {skill}
-Only include content relevant to this unit.
+if mode == "Otomatik Üret":
+    if skill == "Reading":
+        prompt = f"""
+Create a reading comprehension worksheet for a {level} level English learner on the topic "{topic}".
+Include:
+- a short engaging reading text,
+- 4–6 comprehension questions (multiple choice or open-ended),
+- vocabulary support if necessary.
+
+Avoid grammar explanations or pronunciation tasks. Focus only on reading.
+"""
+
+    elif skill == "Grammar":
+        prompt = f"""
+Create a grammar-focused worksheet for a {level} level learner on the topic "{topic}".
+Include:
+- a brief rule or example,
+- 5–6 fill-in-the-blank or sentence transformation exercises.
+
+Avoid long reading texts or listening references. Focus strictly on grammar practice.
+"""
+
+    elif skill == "Vocabulary":
+        prompt = f"""
+Create a vocabulary-building worksheet on the topic "{topic}" for {level} level students.
+Include:
+- 6–8 topic-related words or phrases,
+- matching, fill-in-the-blank or picture-based tasks (if possible).
+
+Avoid grammar or reading comprehension. Focus only on vocabulary use.
+"""
+
+    elif skill == "Writing":
+        prompt = f"""
+Create a writing activity on the topic "{topic}" suitable for {level} level students.
+Include:
+- a model paragraph or writing prompt,
+- guiding questions or outline support.
+
+Do not include grammar exercises or vocabulary lists. Focus on encouraging writing.
+"""
+
+    elif skill == "Speaking":
+        prompt = f"""
+Prepare a speaking activity for {level} level learners around the topic "{topic}".
+Include:
+- discussion questions,
+- pair/group work prompts,
+- role-play or interview tasks (optional).
+
+Avoid grammar explanations or written tasks. Prioritize spoken interaction.
+"""
+
+    elif skill == "Listening":
+        prompt = f"""
+Create a listening activity for {level} level learners on the topic "{topic}".
+Simulate a short dialogue or monologue and prepare:
+- 4–6 comprehension questions,
+- one vocabulary task related to the audio.
+
+Audio should be classroom-level, and the transcript must be included.
+"""
+
+    elif skill == "Pronunciation":
+        prompt = f"""
+Design a pronunciation-focused worksheet on the topic "{topic}" for {level} level learners.
+Include:
+- stress pattern exercises,
+- intonation practice,
+- minimal pairs or sound distinction activities.
+
+Do not include grammar or reading. Focus only on pronunciation awareness and practice.
+"""
+
+    else:
+        prompt = f"""
+Create a language activity for {level} level learners on the topic "{topic}".
+Focus on general language skills in a fun and engaging way.
 """
         else:
             prompt = f"""
@@ -201,10 +468,101 @@ Create a {question_type} activity for a {level} level English learner about "{to
 Only include content related to the topic. Avoid mixing unrelated grammar structures.
 Make it classroom-appropriate and ready for printout.
 """
-    elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
+elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
+    if skill == "Reading":
         prompt = f"""
-Use the following text to create a {question_type} activity for a {level} level English learner, focused on {skill} skills.
-Only use this text as source material. Do not include answer keys.
+You are an experienced English teacher.
+
+Create a reading comprehension worksheet using the text below for {level} level learners.
+Include:
+- 4–6 comprehension questions (multiple choice or open-ended),
+- vocabulary or phrase focus if needed.
+
+Text:
+{custom_text}
+"""
+
+    elif skill == "Grammar":
+        prompt = f"""
+You are an experienced English teacher.
+
+Using the text below, identify a grammar structure suitable for {level} learners.
+Then:
+- create 4–5 fill-in-the-blank or transformation questions using sentences from the text.
+
+Do not change the topic. Focus only on grammar.
+
+Text:
+{custom_text}
+"""
+
+    elif skill == "Vocabulary":
+        prompt = f"""
+You are an experienced English teacher.
+
+Use the text below to create a vocabulary activity for {level} level learners.
+Include:
+- 6–8 target words,
+- matching definitions or fill-in-the-blank exercises,
+- optional sentence completion.
+
+Text:
+{custom_text}
+"""
+
+    elif skill == "Writing":
+        prompt = f"""
+Create a writing task inspired by the text below for {level} level learners.
+
+Include:
+- a model writing question (e.g. write an opinion paragraph, or describe X),
+- supporting ideas or outline hints.
+
+Text:
+{custom_text}
+"""
+
+    elif skill == "Speaking":
+        prompt = f"""
+Use the text below to design a speaking activity for {level} level learners.
+
+Include:
+- 3–5 discussion questions based on the topic,
+- a short role-play or partner speaking prompt.
+
+Text:
+{custom_text}
+"""
+
+    elif skill == "Listening":
+        prompt = f"""
+Use the text below as a simulated audio transcript.
+
+Create a listening activity for {level} level learners:
+- prepare 4–6 comprehension questions,
+- optionally include a vocabulary matching task.
+
+Transcript (Text):
+{custom_text}
+"""
+
+    elif skill == "Pronunciation":
+        prompt = f"""
+Create a pronunciation-focused worksheet using the text below for {level} level learners.
+
+Focus on:
+- stressed syllables in multisyllabic words,
+- intonation in statements vs. questions,
+- sound discrimination (e.g. minimal pairs).
+
+Text:
+{custom_text}
+"""
+
+    else:
+        prompt = f"""
+Use the following text to create a classroom activity suitable for {level} level learners.
+Make sure it is meaningful and clearly based on the input text.
 
 Text:
 {custom_text}
