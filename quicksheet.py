@@ -318,13 +318,9 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
-
-    # Geçici dosya oluştur
+    # Geçici PDF dosyası oluştur
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
-                    
-    # Dosya adı ve PDF ayarları
-    now_str = datetime.now().strftime("%d%m%Y_%H%M")
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
 
@@ -377,30 +373,50 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 y -= 14
         y -= 10
 
-    # AI çıktısından cevap anahtarı bölümlerini kaldır
-    cleaned_lines = []
-    in_answer_section = False
-    for line in content.splitlines():
-        lower = line.strip().lower()
-        if any(lower.startswith(k) for k in ["answer key", "answers:", "correct answers", "answer:"]):
-            in_answer_section = True
-            continue
-        if in_answer_section or lower[:3] in ["1)", "2)", "3)", "4)", "5)"]:
-            continue
-        if "answer:" in lower:
-            continue
-        if lower.startswith("activity title") or lower.startswith("objective") or lower.startswith("activity:"):
-            continue
-        cleaned_lines.append(line)
+    # İçeriği parçalara ayır
+    lines = content.splitlines()
+    intro_lines = []
+    exercise_lines = []
+    in_intro = True
 
-    # Materyal başlığı
-    if cleaned_lines:
+    removal_keywords = [
+        "answer key", "answers:", "correct answers", "answer:",
+        "objective", "activity title", "activity:", "instruction", "instructions:"
+    ]
+
+    for line in lines:
+        lower = line.strip().lower()
+        if any(k in lower for k in removal_keywords):
+            continue
+        if in_intro and ("exercise" in lower or "questions" in lower or "worksheet" in lower):
+            in_intro = False
+        if in_intro:
+            intro_lines.append(line)
+        else:
+            exercise_lines.append(line)
+
+    # Konu Anlatımı
+    if intro_lines:
+        c.setFont("TNR", 12)
+        c.drawString(margin_x, y, "Topic Overview:")
+        y -= 20
+        c.setFont("TNR", 11)
+        for line in intro_lines:
+            if y < 60:
+                c.showPage()
+                y = height - 60
+                c.setFont("TNR", 11)
+            c.drawString(margin_x, y, line.strip())
+            y -= 14
+        y -= 10
+
+    # Alıştırmalar
+    if exercise_lines:
         c.setFont("TNR", 12)
         c.drawString(margin_x, y, "Worksheet:")
         y -= 20
         c.setFont("TNR", 11)
-
-        for line in cleaned_lines:
+        for line in exercise_lines:
             if y < 60:
                 c.showPage()
                 y = height - 60
@@ -410,6 +426,7 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
 
     c.save()
     return filename, os.path.basename(filename)
+
                     
 # TEST ÜRET
 if mode == "Otomatik Üret":
