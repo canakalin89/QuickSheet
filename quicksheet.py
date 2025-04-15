@@ -359,7 +359,7 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     removal_keywords = [
         "answer key", "answers:", "correct answers", "answer:",
         "objective", "activity title", "activity:", "instructions:",
-        "additional practice", "extra practice"
+        "additional practice", "extra practice", "note:", "note -"
     ]
 
     for line in lines:
@@ -409,7 +409,7 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
 
     c.save()
     return filename, os.path.basename(filename)
-                    
+               
 # TEST ÜRET
 if mode == "Otomatik Üret":
     if skill == "Reading":
