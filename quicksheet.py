@@ -544,6 +544,156 @@ else:
     st.stop()
 
 if st.button("✨ Testi Üret"):
+
+    # Gerekli alanlar boşsa uyarı ver
+    if not topic and mode == "Otomatik Üret":
+        st.warning("Lütfen bir konu girin.")
+        st.stop()
+
+    if not level and mode == "Otomatik Üret":
+        st.warning("Lütfen bir dil seviyesi seçin.")
+        st.stop()
+
+    if mode == "Otomatik Üret":
+        if skill == "Reading":
+            prompt = f"""
+Create a reading comprehension worksheet for a {level} level English learner on the topic "{topic}".
+Include:
+- a short engaging reading text,
+- 4–6 comprehension questions,
+- vocabulary support if necessary.
+"""
+        elif skill == "Grammar":
+            prompt = f"""
+Create a grammar-focused worksheet for a {level} level learner on the topic "{topic}".
+Include:
+- a brief explanation or rule,
+- 5–6 exercises like fill-in-the-blanks or error correction.
+"""
+        elif skill == "Vocabulary":
+            prompt = f"""
+Create a vocabulary activity on the topic "{topic}" for {level} level students.
+Include:
+- 6–8 topic-related words or expressions,
+- matching or fill-in-the-blank tasks.
+"""
+        elif skill == "Writing":
+            prompt = f"""
+Create a writing task on the topic "{topic}" for {level} learners.
+Include:
+- a prompt or outline,
+- optional guiding questions.
+"""
+        elif skill == "Speaking":
+            prompt = f"""
+Create a speaking activity for {level} learners on the topic "{topic}".
+Include:
+- discussion questions,
+- a pair or group speaking task.
+"""
+        elif skill == "Listening":
+            prompt = f"""
+Simulate a short listening transcript on the topic "{topic}" for {level} level learners.
+Then create:
+- 4–6 comprehension questions,
+- one vocabulary-related task.
+"""
+        elif skill == "Pronunciation":
+            prompt = f"""
+Create a pronunciation-focused worksheet for {level} learners on the topic "{topic}".
+Include:
+- word/sentence stress,
+- intonation practice,
+- minimal pairs or sound confusion tasks.
+"""
+        else:
+            prompt = f"""
+Create a general language worksheet for {level} level learners on the topic "{topic}".
+"""
+
+    elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
+        if skill == "Reading":
+            prompt = f"""
+Create a reading comprehension worksheet for {level} level learners using the text below.
+Include:
+- 4–6 comprehension questions,
+- vocabulary or phrase focus if needed.
+
+Text:
+{custom_text}
+"""
+        elif skill == "Grammar":
+            prompt = f"""
+Using the text below, create grammar-focused questions for {level} level learners.
+Focus on any relevant grammar structure from the text.
+Include 4–5 fill-in-the-blank or transformation items.
+
+Text:
+{custom_text}
+"""
+        elif skill == "Vocabulary":
+            prompt = f"""
+Create a vocabulary activity based on the text below for {level} learners.
+Include:
+- 6–8 target words,
+- matching or sentence completion exercises.
+
+Text:
+{custom_text}
+"""
+        elif skill == "Writing":
+            prompt = f"""
+Create a writing task inspired by the following text for {level} learners.
+Include:
+- a writing prompt,
+- optional outline or hints.
+
+Text:
+{custom_text}
+"""
+        elif skill == "Speaking":
+            prompt = f"""
+Use the following text to create a speaking task for {level} learners.
+Include:
+- 3–5 discussion questions,
+- short role-play or opinion-based speaking task.
+
+Text:
+{custom_text}
+"""
+        elif skill == "Listening":
+            prompt = f"""
+Treat the following text as a listening transcript for {level} learners.
+Create:
+- 4–6 comprehension questions,
+- optionally, a vocabulary task.
+
+Transcript:
+{custom_text}
+"""
+        elif skill == "Pronunciation":
+            prompt = f"""
+Use the text below to create a pronunciation worksheet for {level} learners.
+Include:
+- word stress identification,
+- intonation pattern practice,
+- minimal pair matching (if applicable).
+
+Text:
+{custom_text}
+"""
+        else:
+            prompt = f"""
+Create a language activity based on the text below for {level} learners.
+
+Text:
+{custom_text}
+"""
+    else:
+        st.warning("Lütfen geçerli bir metin girin.")
+        st.stop()
+
+    # AI'dan içerik alma
     with st.spinner("Yapay zekâ içerik üretiyor..."):
         try:
             response = client.chat.completions.create(
