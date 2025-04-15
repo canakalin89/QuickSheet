@@ -318,62 +318,69 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
+
+    # Geçici PDF dosyası oluştur
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
+
+    # Sayfa ve font ayarları
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
-
-    pdfmetrics.registerFont(TTFont("TNR", "fonts/times.ttf"))
-    c.setFont("TNR", 11)
-
     margin_x = 50
     y = height - 80
 
-    # Logo
+    # Times fontunu kaydet
+    pdfmetrics.registerFont(TTFont("TNR", "fonts/times.ttf"))
+    c.setFont("TNR", 11)
+
+    # Logo ve başlık
     logo_path = "assets/quicksheet_logo.png"
     if os.path.exists(logo_path):
         logo = ImageReader(logo_path)
-        c.drawImage(logo, x=margin_x, y=height - 80, width=40, height=40, mask='auto')
+        c.drawImage(logo, margin_x, height - 70, width=40, height=40, mask='auto')
 
-    # Başlık
     c.setFont("TNR", 16)
     c.drawCentredString(width / 2, height - 60, "QuickSheet Worksheet")
 
-    # Tarih
+    # Tarih (gün.ay.yıl - saat:dakika)
     c.setFont("TNR", 10)
     c.drawRightString(width - margin_x, height - 50, datetime.now().strftime("%d.%m.%Y - %H:%M"))
 
-    y -= 60
-    c.setFont("TNR", 12)
-
     # Öğrenci bilgisi
+    y -= 70
+    c.setFont("TNR", 12)
     c.drawString(margin_x, y, "Name & Surname: ..............................................   No: .............")
     y -= 30
 
-    # Konu Bilgisi (Konu Anlatımı Başlığı)
+    # Konu başlığı (isteğe bağlı)
+    if topic:
+        c.setFont("TNR", 12)
+        c.drawString(margin_x, y, f"Topic: {topic}")
+        y -= 20
+
+    # Konu anlatımı ve alıştırmaları ayır
     lines = content.splitlines()
     intro_lines = []
     exercise_lines = []
     in_intro = True
 
-    removal_keywords = [
-        "answer key", "answers:", "correct answers", "answer:",
-        "objective", "activity title", "activity:", "instructions:",
-        "additional practice", "extra practice", "note:", "note -"
-    ]
-
     for line in lines:
-        lower = line.strip().lower()
-        if any(k in lower for k in removal_keywords):
+        lower = line.lower().strip()
+        # Eğer cevapları veya açıklamaları içeriyorsa atla
+        if any(keyword in lower for keyword in [
+            "answer key", "answers:", "correct answers", "note:", "for example", "(e.g.", "example answer", "sample answer"
+        ]):
             continue
-        if in_intro and ("exercise" in lower or "questions" in lower or "worksheet" in lower or "instruction" in lower):
-            in_intro = False
-        if in_intro:
-            intro_lines.append(line)
-        else:
-            exercise_lines.append(line)
 
-    # Konu anlatımı
+        if in_intro and ("exercise" in lower or "instruction" in lower or "questions" in lower):
+            in_intro = False
+
+        if in_intro:
+            intro_lines.append(line.strip())
+        else:
+            exercise_lines.append(line.strip())
+
+    # Konu anlatımı bölümü
     if intro_lines:
         c.setFont("TNR", 12)
         c.drawString(margin_x, y, "Topic Overview:")
@@ -384,11 +391,11 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 c.showPage()
                 y = height - 60
                 c.setFont("TNR", 11)
-            c.drawString(margin_x, y, line.strip())
+            c.drawString(margin_x, y, line)
             y -= 14
         y -= 10
 
-    # Alıştırmalar
+    # Alıştırmalar bölümü
     if exercise_lines:
         c.setFont("TNR", 12)
         c.drawString(margin_x, y, "Instructions & Exercises:")
@@ -399,7 +406,7 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 c.showPage()
                 y = height - 60
                 c.setFont("TNR", 11)
-            c.drawString(margin_x, y, line.strip())
+            c.drawString(margin_x, y, line)
             y -= 14
 
     # Footer
@@ -407,167 +414,229 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     c.setFont("TNR", 9)
     c.drawCentredString(width / 2, y, "Prepared by using QuickSheet")
 
+    # PDF'yi kaydet
     c.save()
     return filename, os.path.basename(filename)
-               
+
 # TEST ÜRET
+no_answer_policy = """
+❌ DO NOT include:
+- answer keys
+- correct answers
+- example answers (e.g. “played”, “was doing”, etc.)
+- explanations of grammar rules or how to answer
+- “Note”, “Remember”, “Use the correct form of…” type of tips
+
+✅ Format the worksheet clearly and make it printable for students.
+"""
+
 if mode == "Otomatik Üret":
     if skill == "Reading":
         prompt = f"""
 Create a reading comprehension worksheet for a {level} level English learner on the topic "{topic}".
 Include:
-- a short engaging reading text,
+- Activity Title
+- Objective
+- a short reading passage,
 - 4–6 comprehension questions (multiple choice or open-ended),
-- vocabulary support if necessary.
-"""
+- vocabulary support if needed.
+""" + no_answer_policy
 
     elif skill == "Grammar":
         prompt = f"""
 Create a grammar-focused worksheet for a {level} level learner on the topic "{topic}".
 Include:
-- a brief rule or example,
+- Activity Title
+- Objective
+- short grammar explanation,
 - 5–6 fill-in-the-blank or sentence transformation exercises.
-"""
+""" + no_answer_policy
 
     elif skill == "Vocabulary":
         prompt = f"""
 Create a vocabulary-building worksheet on the topic "{topic}" for {level} level students.
 Include:
+- Activity Title
+- Objective
 - 6–8 topic-related words or phrases,
 - matching, fill-in-the-blank or sentence completion activities.
-"""
+""" + no_answer_policy
 
     elif skill == "Writing":
         prompt = f"""
 Create a writing activity on the topic "{topic}" suitable for {level} level students.
 Include:
-- a model paragraph or writing prompt,
+- Activity Title
+- Objective
+- a writing prompt or model paragraph,
 - guiding questions or outline support.
-"""
+""" + no_answer_policy
 
     elif skill == "Speaking":
         prompt = f"""
 Prepare a speaking activity for {level} level learners around the topic "{topic}".
 Include:
+- Activity Title
+- Objective
 - discussion questions,
 - pair/group speaking tasks,
 - short role-plays or interviews.
-"""
+""" + no_answer_policy
 
     elif skill == "Listening":
         prompt = f"""
 Create a listening activity for {level} level learners on the topic "{topic}".
-Simulate a short dialogue or monologue and prepare:
+Include:
+- Activity Title
+- Objective
+- a short monologue or dialogue transcript,
 - 4–6 comprehension questions,
 - vocabulary focus (optional).
-Transcript must be included.
-"""
+""" + no_answer_policy
 
     elif skill == "Pronunciation":
         prompt = f"""
 Design a pronunciation-focused worksheet on the topic "{topic}" for {level} level learners.
 Include:
+- Activity Title
+- Objective
 - stress pattern practice,
 - intonation tasks,
 - minimal pairs or sound distinction exercises.
-"""
+""" + no_answer_policy
 
     else:
         prompt = f"""
 Create a general English activity for {level} level learners on the topic "{topic}".
 Include a short task that improves overall language use.
-"""
+""" + no_answer_policy
+
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        result = chat_completion.choices[0].message.content
+        st.session_state["material_result"] = result
+        st.text_area("Üretilen Materyal", result, height=400)
+    except Exception as e:
+        st.error(f"Bir hata oluştu: {e}")
 
 elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
     if skill == "Reading":
         prompt = f"""
-You are an experienced English teacher.
-
-Create a reading comprehension worksheet using the text below for {level} level learners.
+Create a reading comprehension worksheet for {level} learners using the following text.
 Include:
-- 4–6 comprehension questions,
-- vocabulary focus if needed.
+- Activity Title
+- Objective
+- 4–6 comprehension questions
+- vocabulary support if needed
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Grammar":
         prompt = f"""
-Using the text below, identify a grammar structure suitable for {level} learners.
-Create:
-- 4–5 fill-in-the-blank or transformation questions using real sentences from the text.
+Create a grammar activity based on the text below for {level} learners.
+Include:
+- Activity Title
+- Objective
+- 4–6 fill-in-the-blank or sentence transformation exercises
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Vocabulary":
         prompt = f"""
-Use the text below to create a vocabulary activity for {level} level learners.
+Create a vocabulary worksheet using the following text for {level} learners.
 Include:
-- 6–8 key words or phrases,
-- matching, fill-in-the-blank or short definitions.
+- Activity Title
+- Objective
+- 6–8 words or phrases
+- matching or fill-in-the-blank tasks
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Writing":
         prompt = f"""
-Create a writing prompt inspired by the following text for {level} level students.
+Create a writing task inspired by the text below for {level} learners.
 Include:
-- one main writing question,
-- outline support or hints.
+- Activity Title
+- Objective
+- writing prompt with outline guidance
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Speaking":
         prompt = f"""
-Use the text below to create a speaking task for {level} level learners.
+Create a speaking task using the text below for {level} learners.
 Include:
-- 3–5 discussion questions,
-- one pair-work or short role-play task.
+- Activity Title
+- Objective
+- 3–5 discussion questions
+- one pair-work or role-play
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Listening":
         prompt = f"""
-Use the following text as an audio transcript and create a listening task.
-For {level} level learners:
-- write 4–6 listening questions,
-- optionally include a vocabulary match-up.
+Use the following as a listening transcript and create a task for {level} learners.
+Include:
+- Activity Title
+- Objective
+- 4–6 comprehension questions
+- optional vocabulary activity
 
 Transcript:
 {custom_text}
-"""
+""" + no_answer_policy
 
     elif skill == "Pronunciation":
         prompt = f"""
-Use the text below to create a pronunciation-based worksheet for {level} level learners.
+Create a pronunciation activity using the text below for {level} learners.
 Include:
-- word stress identification,
-- sentence intonation,
-- minimal pairs or confusing sounds (if relevant).
+- Activity Title
+- Objective
+- word stress, intonation or minimal pairs tasks
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
 
     else:
         prompt = f"""
-Use this text to prepare a general classroom task suitable for {level} learners.
+Create a general task based on this text for {level} learners.
 
 Text:
 {custom_text}
-"""
+""" + no_answer_policy
+
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        result = chat_completion.choices[0].message.content
+        st.session_state["material_result"] = result
+        st.text_area("Üretilen Materyal", result, height=400)
+    except Exception as e:
+        st.error(f"Hata oluştu: {e}")
 else:
     st.warning("Lütfen geçerli bir metin girin.")
     st.stop()
+
 
 if st.button("✨ Testi Üret"):
 
