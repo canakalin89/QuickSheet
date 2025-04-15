@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
 from datetime import datetime
 import os
 import tempfile
@@ -317,94 +318,94 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
-    now_display = datetime.now().strftime("%d.%m.%Y - %H:%M")
-    
-    # Dosya adı belirleme
-    base_name = "quicksheet"
-    if level and topic and skill:
-        file_name = f"{base_name}_{level}_{topic.replace(' ', '')}_{skill}.pdf"
-    elif meb_grade and selected_unit:
-        file_name = f"{base_name}_{meb_grade.replace(' ', '')}_{selected_unit.replace(' ', '').replace(':', '')}_{skill}.pdf"
-    else:
-        file_name = f"{base_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-
-# AI çıktısını satır satır temizle
-cleaned_lines = []
-in_answer_section = False
-
-for line in content.splitlines():
-    lower = line.strip().lower()
-
-    # Cevap anahtarı başladığı anda sonrasını alma
-    if any(lower.startswith(key) for key in ["answer key", "answers:", "correct answers", "answer:"]):
-        in_answer_section = True
-        continue
-
-    # Cevap satırları: 1) A 2) B vs. → atla
-    if in_answer_section or lower[:3] in ["1)", "2)", "3)", "4)", "5)"]:
-        continue
-
-    # "Answer:" gibi inline ifadeleri kaldır
-    if "answer:" in lower:
-        continue
-
-    cleaned_lines.append(line)
-                    
-    # Geçici dosya
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    filename = temp_file.name
-
+    # Dosya adı ve PDF ayarları
+    now_str = datetime.now().strftime("%d%m%Y_%H%M")
+    filename = f"/mnt/data/quicksheet_{now_str}.pdf"
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
-    margin_x = 40
+
+    # Font ayarı
+    pdfmetrics.registerFont(TTFont("TNR", "fonts/times.ttf"))
+    c.setFont("TNR", 11)
+
+    margin_x = 50
     y = height - 80
 
+    # Logo (sol üst)
+    logo_path = "assets/quicksheet_logo.png"
+    if os.path.exists(logo_path):
+        logo = ImageReader(logo_path)
+        c.drawImage(logo, x=margin_x, y=height - 80, width=40, height=40, mask='auto')
+
+    # Başlık (ortada)
+    c.setFont("TNR", 16)
+    c.drawCentredString(width / 2, height - 60, "QuickSheet Worksheet")
+
+    # Tarih (sağ üst)
     c.setFont("TNR", 10)
-    c.drawRightString(width - margin_x, height - 50, f"Tarih: {now_display}")
-    c.setFont("TNR", 14)
-    c.drawString(margin_x, y, "QuickSheet Worksheet")
-    y -= 30
+    c.drawRightString(width - margin_x, height - 50, datetime.now().strftime("%d.%m.%Y - %H:%M"))
+
+    y -= 60
     c.setFont("TNR", 12)
 
+    # Bilgilendirme: MEB veya Seviye bazlı
     if meb_grade and selected_unit:
-        c.drawString(margin_x, y, f"Sınıf: {meb_grade}")
+        c.drawString(margin_x, y, f"Sınıf: {meb_grade}    Ünite: {selected_unit}")
         y -= 20
-        c.drawString(margin_x, y, f"Ünite: {selected_unit}")
-        y -= 20
-        c.drawString(margin_x, y, f"Beceri: {skill} / Soru Türü: {question_type}")
-        y -= 30
     elif level and topic:
-        c.drawString(margin_x, y, f"Dil Seviyesi: {level}")
+        c.drawString(margin_x, y, f"Level: {level}    Topic: {topic}")
         y -= 20
-        c.drawString(margin_x, y, f"Konu: {topic}")
-        y -= 20
-        c.drawString(margin_x, y, f"Beceri: {skill} / Soru Türü: {question_type}")
-        y -= 30
 
+    # Kendi metni varsa, yaz
     if custom_text:
+        y -= 10
         c.setFont("TNR", 12)
-        c.drawString(margin_x, y, "Metin:")
-        y -= 20
+        c.drawString(margin_x, y, "Text:")
+        y -= 15
         c.setFont("TNR", 11)
         for line in custom_text.split("\n"):
-            c.drawString(margin_x, y, line.strip())
-            y -= 15
+            for sub in line.strip().splitlines():
+                if y < 60:
+                    c.showPage()
+                    y = height - 60
+                    c.setFont("TNR", 11)
+                c.drawString(margin_x, y, sub.strip())
+                y -= 14
         y -= 10
 
-    c.setFont("TNR", 12)
-    c.drawString(margin_x, y, "Alıştırma:")
-    y -= 20
-    c.setFont("TNR", 11)
-    for line in content.split("\n"):
-        if y < 50:
-            c.showPage()
-            y = height - 50
-            c.setFont("TNR", 11)
-        c.drawString(margin_x, y, line.strip())
-        y -= 15
+    # AI çıktısından cevap anahtarı bölümlerini kaldır
+    cleaned_lines = []
+    in_answer_section = False
+    for line in content.splitlines():
+        lower = line.strip().lower()
+        if any(lower.startswith(k) for k in ["answer key", "answers:", "correct answers", "answer:"]):
+            in_answer_section = True
+            continue
+        if in_answer_section or lower[:3] in ["1)", "2)", "3)", "4)", "5)"]:
+            continue
+        if "answer:" in lower:
+            continue
+        if lower.startswith("activity title") or lower.startswith("objective") or lower.startswith("activity:"):
+            continue
+        cleaned_lines.append(line)
+
+    # Materyal başlığı
+    if cleaned_lines:
+        c.setFont("TNR", 12)
+        c.drawString(margin_x, y, "Worksheet:")
+        y -= 20
+        c.setFont("TNR", 11)
+
+        for line in cleaned_lines:
+            if y < 60:
+                c.showPage()
+                y = height - 60
+                c.setFont("TNR", 11)
+            c.drawString(margin_x, y, line.strip())
+            y -= 14
 
     c.save()
-    return filename, file_name
+    return filename
                     
 # TEST ÜRET
 if mode == "Otomatik Üret":
