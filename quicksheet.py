@@ -391,8 +391,6 @@ Include:
 - a short engaging reading text,
 - 4–6 comprehension questions (multiple choice or open-ended),
 - vocabulary support if necessary.
-
-Avoid grammar explanations or pronunciation tasks. Focus only on reading.
 """
 
     elif skill == "Grammar":
@@ -401,8 +399,6 @@ Create a grammar-focused worksheet for a {level} level learner on the topic "{to
 Include:
 - a brief rule or example,
 - 5–6 fill-in-the-blank or sentence transformation exercises.
-
-Avoid long reading texts or listening references. Focus strictly on grammar practice.
 """
 
     elif skill == "Vocabulary":
@@ -410,9 +406,7 @@ Avoid long reading texts or listening references. Focus strictly on grammar prac
 Create a vocabulary-building worksheet on the topic "{topic}" for {level} level students.
 Include:
 - 6–8 topic-related words or phrases,
-- matching, fill-in-the-blank or picture-based tasks (if possible).
-
-Avoid grammar or reading comprehension. Focus only on vocabulary use.
+- matching, fill-in-the-blank or sentence completion activities.
 """
 
     elif skill == "Writing":
@@ -421,8 +415,6 @@ Create a writing activity on the topic "{topic}" suitable for {level} level stud
 Include:
 - a model paragraph or writing prompt,
 - guiding questions or outline support.
-
-Do not include grammar exercises or vocabulary lists. Focus on encouraging writing.
 """
 
     elif skill == "Speaking":
@@ -430,10 +422,8 @@ Do not include grammar exercises or vocabulary lists. Focus on encouraging writi
 Prepare a speaking activity for {level} level learners around the topic "{topic}".
 Include:
 - discussion questions,
-- pair/group work prompts,
-- role-play or interview tasks (optional).
-
-Avoid grammar explanations or written tasks. Prioritize spoken interaction.
+- pair/group speaking tasks,
+- short role-plays or interviews.
 """
 
     elif skill == "Listening":
@@ -441,33 +431,25 @@ Avoid grammar explanations or written tasks. Prioritize spoken interaction.
 Create a listening activity for {level} level learners on the topic "{topic}".
 Simulate a short dialogue or monologue and prepare:
 - 4–6 comprehension questions,
-- one vocabulary task related to the audio.
-
-Audio should be classroom-level, and the transcript must be included.
+- vocabulary focus (optional).
+Transcript must be included.
 """
 
     elif skill == "Pronunciation":
         prompt = f"""
 Design a pronunciation-focused worksheet on the topic "{topic}" for {level} level learners.
 Include:
-- stress pattern exercises,
-- intonation practice,
-- minimal pairs or sound distinction activities.
-
-Do not include grammar or reading. Focus only on pronunciation awareness and practice.
+- stress pattern practice,
+- intonation tasks,
+- minimal pairs or sound distinction exercises.
 """
 
     else:
         prompt = f"""
-Create a language activity for {level} level learners on the topic "{topic}".
-Focus on general language skills in a fun and engaging way.
+Create a general English activity for {level} level learners on the topic "{topic}".
+Include a short task that improves overall language use.
 """
-        else:
-            prompt = f"""
-Create a {question_type} activity for a {level} level English learner about "{topic}", focused on {skill} skills.
-Only include content related to the topic. Avoid mixing unrelated grammar structures.
-Make it classroom-appropriate and ready for printout.
-"""
+
 elif mode == "Kendi Metnimden Test Üret" and custom_text.strip() != "":
     if skill == "Reading":
         prompt = f"""
@@ -475,8 +457,8 @@ You are an experienced English teacher.
 
 Create a reading comprehension worksheet using the text below for {level} level learners.
 Include:
-- 4–6 comprehension questions (multiple choice or open-ended),
-- vocabulary or phrase focus if needed.
+- 4–6 comprehension questions,
+- vocabulary focus if needed.
 
 Text:
 {custom_text}
@@ -484,13 +466,9 @@ Text:
 
     elif skill == "Grammar":
         prompt = f"""
-You are an experienced English teacher.
-
 Using the text below, identify a grammar structure suitable for {level} learners.
-Then:
-- create 4–5 fill-in-the-blank or transformation questions using sentences from the text.
-
-Do not change the topic. Focus only on grammar.
+Create:
+- 4–5 fill-in-the-blank or transformation questions using real sentences from the text.
 
 Text:
 {custom_text}
@@ -498,13 +476,10 @@ Text:
 
     elif skill == "Vocabulary":
         prompt = f"""
-You are an experienced English teacher.
-
 Use the text below to create a vocabulary activity for {level} level learners.
 Include:
-- 6–8 target words,
-- matching definitions or fill-in-the-blank exercises,
-- optional sentence completion.
+- 6–8 key words or phrases,
+- matching, fill-in-the-blank or short definitions.
 
 Text:
 {custom_text}
@@ -512,11 +487,10 @@ Text:
 
     elif skill == "Writing":
         prompt = f"""
-Create a writing task inspired by the text below for {level} level learners.
-
+Create a writing prompt inspired by the following text for {level} level students.
 Include:
-- a model writing question (e.g. write an opinion paragraph, or describe X),
-- supporting ideas or outline hints.
+- one main writing question,
+- outline support or hints.
 
 Text:
 {custom_text}
@@ -524,11 +498,10 @@ Text:
 
     elif skill == "Speaking":
         prompt = f"""
-Use the text below to design a speaking activity for {level} level learners.
-
+Use the text below to create a speaking task for {level} level learners.
 Include:
-- 3–5 discussion questions based on the topic,
-- a short role-play or partner speaking prompt.
+- 3–5 discussion questions,
+- one pair-work or short role-play task.
 
 Text:
 {custom_text}
@@ -536,24 +509,22 @@ Text:
 
     elif skill == "Listening":
         prompt = f"""
-Use the text below as a simulated audio transcript.
+Use the following text as an audio transcript and create a listening task.
+For {level} level learners:
+- write 4–6 listening questions,
+- optionally include a vocabulary match-up.
 
-Create a listening activity for {level} level learners:
-- prepare 4–6 comprehension questions,
-- optionally include a vocabulary matching task.
-
-Transcript (Text):
+Transcript:
 {custom_text}
 """
 
     elif skill == "Pronunciation":
         prompt = f"""
-Create a pronunciation-focused worksheet using the text below for {level} level learners.
-
-Focus on:
-- stressed syllables in multisyllabic words,
-- intonation in statements vs. questions,
-- sound discrimination (e.g. minimal pairs).
+Use the text below to create a pronunciation-based worksheet for {level} level learners.
+Include:
+- word stress identification,
+- sentence intonation,
+- minimal pairs or confusing sounds (if relevant).
 
 Text:
 {custom_text}
@@ -561,15 +532,14 @@ Text:
 
     else:
         prompt = f"""
-Use the following text to create a classroom activity suitable for {level} level learners.
-Make sure it is meaningful and clearly based on the input text.
+Use this text to prepare a general classroom task suitable for {level} learners.
 
 Text:
 {custom_text}
 """
-    else:
-        st.warning("Lütfen geçerli bir seçim veya metin girin.")
-        st.stop()
+else:
+    st.warning("Lütfen geçerli bir metin girin.")
+    st.stop()
 
     with st.spinner("Yapay zekâ içerik üretiyor..."):
         try:
