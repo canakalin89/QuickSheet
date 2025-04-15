@@ -27,6 +27,8 @@ question_type_by_skill = {
     "Speaking": ["Role Play", "Guided Interview", "Picture Description", "Opinion Giving", "Storytelling"],
     "Grammar": ["Multiple Choice", "Fill in the Blanks", "Error Correction"],
     "Vocabulary": ["Matching", "Word Formation", "Synonym/Antonym", "Fill in the Blanks"]
+    "Pronunciation": ["Stress Practice", "Intonation Pattern", "Minimal Pairs", "Sound Matching"],
+
 }
 
 # Mod seçimi
@@ -541,6 +543,7 @@ else:
     st.warning("Lütfen geçerli bir metin girin.")
     st.stop()
 
+if st.button("✨ Testi Üret"):
     with st.spinner("Yapay zekâ içerik üretiyor..."):
         try:
             response = client.chat.completions.create(
