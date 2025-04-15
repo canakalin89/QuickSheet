@@ -318,6 +318,8 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
+    os.makedirs("/mnt/data", exist_ok=True)
+
     # Dosya adı ve PDF ayarları
     now_str = datetime.now().strftime("%d%m%Y_%H%M")
     filename = f"/mnt/data/quicksheet_{now_str}.pdf"
