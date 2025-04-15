@@ -325,7 +325,6 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                     
     # Dosya adı ve PDF ayarları
     now_str = datetime.now().strftime("%d%m%Y_%H%M")
-    filename = f"/mnt/data/quicksheet_{now_str}.pdf"
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
 
