@@ -318,62 +318,39 @@ meb_unit_prompts = {
 # PDF üretim fonksiyonu
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
                 meb_grade=None, selected_unit=None, custom_text=None):
-    # Geçici PDF dosyası oluştur
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
 
-    # Font ayarı
     pdfmetrics.registerFont(TTFont("TNR", "fonts/times.ttf"))
     c.setFont("TNR", 11)
 
     margin_x = 50
     y = height - 80
 
-    # Logo (sol üst)
+    # Logo
     logo_path = "assets/quicksheet_logo.png"
     if os.path.exists(logo_path):
         logo = ImageReader(logo_path)
         c.drawImage(logo, x=margin_x, y=height - 80, width=40, height=40, mask='auto')
 
-    # Başlık (ortada)
+    # Başlık
     c.setFont("TNR", 16)
     c.drawCentredString(width / 2, height - 60, "QuickSheet Worksheet")
 
-    # Tarih (sağ üst)
+    # Tarih
     c.setFont("TNR", 10)
     c.drawRightString(width - margin_x, height - 50, datetime.now().strftime("%d.%m.%Y - %H:%M"))
 
     y -= 60
     c.setFont("TNR", 12)
 
-    # Bilgilendirme: MEB veya Seviye bazlı
-    if meb_grade and selected_unit:
-        c.drawString(margin_x, y, f"Sınıf: {meb_grade}    Ünite: {selected_unit}")
-        y -= 20
-    elif level and topic:
-        c.drawString(margin_x, y, f"Level: {level}    Topic: {topic}")
-        y -= 20
+    # Öğrenci bilgisi
+    c.drawString(margin_x, y, "Name & Surname: ..............................................   No: .............")
+    y -= 30
 
-    # Kendi metni varsa, yaz
-    if custom_text:
-        y -= 10
-        c.setFont("TNR", 12)
-        c.drawString(margin_x, y, "Text:")
-        y -= 15
-        c.setFont("TNR", 11)
-        for line in custom_text.split("\n"):
-            for sub in line.strip().splitlines():
-                if y < 60:
-                    c.showPage()
-                    y = height - 60
-                    c.setFont("TNR", 11)
-                c.drawString(margin_x, y, sub.strip())
-                y -= 14
-        y -= 10
-
-    # İçeriği parçalara ayır
+    # Konu Bilgisi (Konu Anlatımı Başlığı)
     lines = content.splitlines()
     intro_lines = []
     exercise_lines = []
@@ -381,21 +358,22 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
 
     removal_keywords = [
         "answer key", "answers:", "correct answers", "answer:",
-        "objective", "activity title", "activity:", "instruction", "instructions:"
+        "objective", "activity title", "activity:", "instructions:",
+        "additional practice", "extra practice"
     ]
 
     for line in lines:
         lower = line.strip().lower()
         if any(k in lower for k in removal_keywords):
             continue
-        if in_intro and ("exercise" in lower or "questions" in lower or "worksheet" in lower):
+        if in_intro and ("exercise" in lower or "questions" in lower or "worksheet" in lower or "instruction" in lower):
             in_intro = False
         if in_intro:
             intro_lines.append(line)
         else:
             exercise_lines.append(line)
 
-    # Konu Anlatımı
+    # Konu anlatımı
     if intro_lines:
         c.setFont("TNR", 12)
         c.drawString(margin_x, y, "Topic Overview:")
@@ -413,7 +391,7 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
     # Alıştırmalar
     if exercise_lines:
         c.setFont("TNR", 12)
-        c.drawString(margin_x, y, "Worksheet:")
+        c.drawString(margin_x, y, "Instructions & Exercises:")
         y -= 20
         c.setFont("TNR", 11)
         for line in exercise_lines:
@@ -424,9 +402,13 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
             c.drawString(margin_x, y, line.strip())
             y -= 14
 
+    # Footer
+    y = max(y - 20, 40)
+    c.setFont("TNR", 9)
+    c.drawCentredString(width / 2, y, "Prepared by using QuickSheet")
+
     c.save()
     return filename, os.path.basename(filename)
-
                     
 # TEST ÜRET
 if mode == "Otomatik Üret":
