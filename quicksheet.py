@@ -26,8 +26,8 @@ question_type_by_skill = {
     "Writing": ["Picture Prompt", "Sentence Completion", "Paragraph Writing", "Reordering Sentences"],
     "Speaking": ["Role Play", "Guided Interview", "Picture Description", "Opinion Giving", "Storytelling"],
     "Grammar": ["Multiple Choice", "Fill in the Blanks", "Error Correction"],
-    "Vocabulary": ["Matching", "Word Formation", "Synonym/Antonym", "Fill in the Blanks"]
-    "Pronunciation": ["Stress Practice", "Intonation Pattern", "Minimal Pairs", "Sound Matching"],
+    "Vocabulary": ["Matching", "Word Formation", "Synonym/Antonym", "Fill in the Blanks"],
+    "Pronunciation": ["Stress Practice", "Intonation Pattern", "Minimal Pairs", "Sound Matching"]
 
 }
 
