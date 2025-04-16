@@ -37,7 +37,7 @@ mode = st.radio("Test Tipi", ["Otomatik Üret", "Kendi Metnimden Test Üret"])
 custom_text = st.text_area("📝 İngilizce metninizi buraya yapıştırın", height=200) if mode == "Kendi Metnimden Test Üret" else ""
 
 # Ortak değişkenler (ilk değer boş)
-level = topic = meb_grade = selected_unit = skill = question_type = prompt = ""
+level = topic = meb_unit_prompts = selected_unit = skill = question_type = prompt = ""
 
 # Seviye Bazlı Seçimler
 if mode_selection == "🌍 Seviye Bazlı":
@@ -48,7 +48,7 @@ if mode_selection == "🌍 Seviye Bazlı":
 
 # MEB Müfredatı Seçimleri
 elif mode_selection == "📘 MEB Müfredatlı":
-    meb_grade = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
+    meb_unit_prompts: = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
     units_by_grade = {
         "9. Sınıf": [
             "Theme 1: Studying Abroad",
@@ -99,7 +99,7 @@ elif mode_selection == "📘 MEB Müfredatlı":
             "Theme 10: Manners"
         ]
     }
-    selected_unit = st.selectbox("Ünite Seç", units_by_grade.get(meb_grade, []))
+    selected_unit = st.selectbox("Ünite Seç", units_by_grade.get(meb_unit_prompts, []))
     skill = st.selectbox("Beceri", list(question_type_by_skill.keys()), key="meb_skill")
     question_type = st.selectbox("Soru Türü", question_type_by_skill[skill], key="meb_qtype")
 
@@ -115,7 +115,7 @@ no_answer_policy = """
 ✅ Format the worksheet clearly and make it printable for students.
 """
 def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
-                meb_grade=None, selected_unit=None, custom_text=None):
+                meb_unit_prompts=None, selected_unit=None, custom_text=None):
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
     c = canvas.Canvas(filename, pagesize=A4)
@@ -205,13 +205,14 @@ def save_to_pdf(content, level=None, skill=None, question_type=None, topic=None,
 
     c.save()
     return filename, os.path.basename(filename)
+                    
 # TEST ÜRET BUTONU
 if st.button("✨ Testi Üret"):
     # Giriş kontrolleri
     if mode_selection == "🌍 Seviye Bazlı" and (not level or not topic):
         st.warning("Lütfen seviye ve konu giriniz.")
         st.stop()
-    if mode_selection == "📘 MEB Müfredatlı" and (not selected_unit or not meb_grade):
+    if mode_selection == "📘 MEB Müfredatlı" and (not selected_unit or not meb_unit_prompts):
         st.warning("Lütfen MEB sınıfı ve ünite seçiniz.")
         st.stop()
 
@@ -231,12 +232,12 @@ if st.button("✨ Testi Üret"):
     if mode == "Otomatik Üret":
         # Seviye bazlı
         if mode_selection == "🌍 Seviye Bazlı":
-            prompt = f"You are generating a classroom-ready English worksheet for {level} learners on the topic \"{topic}\", focused on the skill: {skill}.\n"
+            prompt = f"You are generating a classroom-ready English worksheet for {level} learners on the topic \"{topic}\", focused on the skill: {skill}.+ no_answer_policy \n"
 
         # MEB müfredatı bazlı
         elif mode_selection == "📘 MEB Müfredatlı" and selected_unit in meb_unit_prompts:
             unit_info = meb_unit_prompts[selected_unit]
-            prompt = f"""You are preparing a worksheet aligned with the Turkish MEB {meb_grade} curriculum.\nUnit: {selected_unit}
+            prompt = f"""You are preparing a worksheet aligned with the Turkish MEB {meb_unit_prompts} curriculum.\nUnit: {selected_unit} 
 Functions: {unit_info['functions']}
 Vocabulary: {unit_info['vocab']}
 Grammar Focus: {unit_info['grammar']}\nSkill: {skill}\n"""
@@ -285,6 +286,7 @@ Grammar Focus: {unit_info['grammar']}\nSkill: {skill}\n"""
             st.text_area("📄 Üretilen Materyal", result, height=400)
         except Exception as e:
             st.error(f"Bir hata oluştu: {e}")
+            
 # PDF BUTONU
 if "material_result" in st.session_state:
     st.markdown("### ✅ Çıktıya hazır:")
@@ -297,7 +299,7 @@ if "material_result" in st.session_state:
             skill=skill if "skill" in locals() else None,
             question_type=question_type if "question_type" in locals() else None,
             topic=topic if "topic" in locals() else None,
-            meb_grade=meb_grade if "meb_grade" in locals() else None,
+            meb_unit_prompts=meb_unit_prompts if "meb_unit_prompts" in locals() else None,
             selected_unit=selected_unit if "selected_unit" in locals() else None,
             custom_text=custom_text if "custom_text" in locals() else None
         )
