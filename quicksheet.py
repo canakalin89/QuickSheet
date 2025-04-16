@@ -48,7 +48,7 @@ if mode_selection == "🌍 Seviye Bazlı":
 
 # MEB Müfredatı Seçimleri
 elif mode_selection == "📘 MEB Müfredatlı":
-    meb_unit_prompts: = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
+    meb_unit_prompts = st.selectbox("📚 MEB Sınıfı", ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"])
     units_by_grade = {
         "9. Sınıf": [
             "Theme 1: Studying Abroad",
