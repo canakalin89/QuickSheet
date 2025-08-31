@@ -227,7 +227,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
 
 # --- Uygulama Mantığı ---
 if st.button("✨ İçeriği Üret"):
-    if "YOUR_GEMINI_API_KEY" in genai.api_key:
+    if "AIzaSyBSaZUaZPNMbqRyVp1uxOfibUh6y19ww5U" in genai.api_key:
         st.error("Lütfen Gemini API anahtarınızı kodun içine ekleyin.")
     else:
         with st.spinner(f"{selected_tool} oluşturuluyor... Bu biraz zaman alabilir."):
