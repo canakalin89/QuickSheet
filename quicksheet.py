@@ -7,12 +7,12 @@ from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 import os
 import base64
-import re
 import requests
 
 # --- API ve Ayarlar ---
 # ÖNEMLİ: Kendi Gemini API anahtarınızı buraya ekleyin
 # (Örnek: genai.configure(api_key="AIzaSyA..."))
+# API anahtarınız doğrudan kodun içine yazılacak, bu yüzden GitHub'a yüklerken dikkatli olun.
 genai.configure(api_key="AIzaSyBSaZUaZPNMbqRyVp1uxOfibUh6y19ww5U")
 
 # Türkçe karakterler için font ayarı
@@ -29,7 +29,7 @@ try:
     pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
     pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_path))
 except Exception as e:
-    st.error(f"Font yüklenirken hata oluştu: {e}")
+    st.error(f"Font yüklenirken hata oluştu: {e}. Lütfen `fonts` klasörünü ve içindeki `DejaVuSans.ttf` dosyasını kontrol edin.")
 
 # Sayfa başlığı
 st.set_page_config(page_title="QuickSheet", page_icon="⚡")
@@ -105,7 +105,7 @@ with st.sidebar:
 
 # --- AI Prompt Fonksiyonları ---
 def generate_ai_worksheet_prompt(grade, unit, skill, num_questions):
-    topic_info = meb_curriculum[grade][unit][skill]
+    topic_info = meb_curriculum[grade][unit].get(skill, "")
     return f"""
     You are a helpful and experienced English teacher.
     Your task is to create a customized worksheet for a {grade} class.
@@ -160,7 +160,7 @@ def generate_rubric_prompt(grade, unit, skill):
     """
 
 def generate_differentiation_prompt(grade, unit, skill, diff_type):
-    topic_info = meb_curriculum[grade][unit][skill]
+    topic_info = meb_curriculum[grade][unit].get(skill, "")
     if diff_type == "Destekleyici (Supporting)":
         prompt_intro = f"Create a SUPPORTING activity for students who need extra help."
         prompt_details = "The activity should be simpler, focusing on foundational concepts (e.g., fill-in-the-blanks, matching) and basic vocabulary."
@@ -186,13 +186,13 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
     pdf.setTitle("English Worksheet - Grade 9")
     pdf.setAuthor("QuickSheet AI Assistant")
     pdf.setCreator("QuickSheet AI Assistant")
-
+    
     pdf.setFont("DejaVuSans", 10)
     
     lines = content.split('\n')
     y_position = 750
     
-    pdf.setFont("DejaVuSans", 16)
+    pdf.setFont("DejaVuSans-Bold", 16)
     pdf.drawCentredString(A4[0] / 2.0, y_position + 20, "English Worksheet - Grade 9")
     y_position -= 20
 
@@ -228,7 +228,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
 
 # --- Uygulama Mantığı ---
 if st.button("✨ İçeriği Üret"):
-    if not os.getenv("GEMINI_API_KEY") and "YOUR_GEMINI_API_KEY" in os.getenv("GEMINI_API_KEY"):
+    if "YOUR_GEMINI_API_KEY" in genai.api_key:
         st.error("Lütfen Gemini API anahtarınızı kodun içine ekleyin.")
     else:
         with st.spinner(f"{selected_tool} oluşturuluyor... Bu biraz zaman alabilir."):
@@ -263,7 +263,7 @@ if st.button("✨ İçeriği Üret"):
                         st.download_button("🔑 Öğretmen İçin Cevap Anahtarlı PDF İndir", f, file_name="ogretmen_calisma_sayfasi.pdf")
                 else:
                     pdf_path_single = create_pdf(ai_content, f"{selected_tool.lower().replace(' ', '_')}.pdf")
-                    with open(pdf_path_single, "rb") as f:
+                    with open(pdf_path_single, "rb") as f as f:
                         st.download_button(f"📄 PDF Olarak İndir", f, file_name=f"{selected_tool.lower().replace(' ', '_')}.pdf")
                 
                 st.success("İçerik başarıyla oluşturuldu!")
