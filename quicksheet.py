@@ -5,404 +5,417 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from docx import Document
+from docx.shared import Pt
 import time
 import google.generativeai as genai
+import io
+import re
 
 # -----------------------------
-# SAYFA YAPISI
+# SAYFA YAPISI VE BAŞLANGIÇ AYARLARI
 # -----------------------------
-st.set_page_config(page_title="QuickSheet", page_icon="⚡", layout="wide")
-st.title("⚡ QuickSheet: MEB İngilizce Öğretmen Asistanı")
-st.markdown("9. Sınıf (B1.1) müfredatına uygun çalışma kağıtları, ders planları, rubricler ve ek aktiviteler üretin.")
+st.set_page_config(page_title="QuickSheet v2.0", page_icon="⚡", layout="wide")
+st.title("⚡ QuickSheet v2.0: Gelişmiş MEB İngilizce Öğretmen Asistanı")
+st.markdown("9. Sınıf (B1.1) 'Century of Türkiye' (Maarif Modeli) müfredatına uygun çalışma kağıtları, ders planları, dinleme etkinlikleri ve daha fazlasını üretin.")
 
-# Gemini API anahtarı (secrets’tan alınıyor)
+# Session State Başlatma
+if 'ai_content' not in st.session_state:
+    st.session_state.ai_content = ""
+if 'last_tool' not in st.session_state:
+    st.session_state.last_tool = ""
+
+# Gemini API anahtarı (streamlit secrets'tan alınıyor)
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
-except KeyError:
-    st.error("Gemini API anahtarı bulunamadı. Lütfen GitHub/Replit secrets’ına GEMINI_API_KEY ekleyin: https://ai.google.dev")
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+except Exception:
+    st.error("Gemini API anahtarı bulunamadı veya geçersiz. Lütfen Streamlit Cloud secrets'a 'GEMINI_API_KEY' ekleyin. Anahtarınızı https://ai.google.dev adresinden alabilirsiniz.")
     st.stop()
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+# -----------------------------
+# FONT (PDF için Türkçe karakter desteği)
+# -----------------------------
+@st.cache_resource
+def load_font():
+    font_path_regular = "fonts/DejaVuSans.ttf"
+    font_path_bold = "fonts/DejaVuSans-Bold.ttf"
+    try:
+        if not os.path.exists("fonts"):
+            os.makedirs("fonts")
+        
+        # Regular Font
+        if not os.path.exists(font_path_regular):
+            url_regular = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans.ttf"
+            r = requests.get(url_regular, allow_redirects=True, timeout=20)
+            with open(font_path_regular, 'wb') as f:
+                f.write(r.content)
+        
+        # Bold Font
+        if not os.path.exists(font_path_bold):
+            url_bold = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans-Bold.ttf"
+            r = requests.get(url_bold, allow_redirects=True, timeout=20)
+            with open(font_path_bold, 'wb') as f:
+                f.write(r.content)
+
+        pdfmetrics.registerFont(TTFont("DejaVuSans", font_path_regular))
+        pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_path_bold))
+        return True
+    except Exception as e:
+        st.error(f"Font yüklenirken bir hata oluştu: {e}. Lütfen internet bağlantınızı kontrol edin veya 'fonts' klasörünü manuel olarak oluşturun.")
+        return False
+
+font_loaded = load_font()
 
 # -----------------------------
-# FONT (Türkçe karakter desteği)
-# -----------------------------
-try:
-    if not os.path.exists("fonts"):
-        os.makedirs("fonts")
-    font_path = "fonts/DejaVuSans.ttf"
-    if not os.path.exists(font_path):
-        url = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans.ttf"
-        r = requests.get(url, allow_redirects=True, timeout=20)
-        with open(font_path, 'wb') as f:
-            f.write(r.content)
-    pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
-    pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_path))
-except Exception as e:
-    st.error(f"Font yüklenirken hata: {e}. 'fonts/DejaVuSans.ttf' dosyasını elle ekleyin.")
-
-# -----------------------------
-# MÜFREDAT (MEB 2025 9. SINIF, 8 TEMA)
+# MÜFREDAT BİLGİSİ (MEB 2025 - 9. SINIF)
 # -----------------------------
 meb_curriculum = {
     "9. Sınıf": {
         "Theme 1: School Life": {
-            "Grammar": "Can/can't (yetenek/olasılık), Simple Present (to be), Simple Past (was/were, düzenli-düzensiz).",
-            "Vocabulary": "Okullar, dersler, kulüpler, kurallar, ülkeler ve milletler, diller.",
-            "Reading": "Okul hayatı ve kültürel değişim üzerine kısa metinler; okul kuralları ve kulüp tanıtımları.",
-            "Speaking": "Kendini tanıtma, ülkeler ve turistik yerleri tarif etme.",
-            "Writing": "Okul kuralları veya kültürel değişim hakkında kısa paragraflar.",
-            "Pronunciation": "Uzun ve kısa ünlüler: /ae/, /a:/, /eɪ/, /ɔː/. Ünsüzler: /b/, /c/, /d/."
+            "Grammar": "Simple Present (to be), Modal 'can' (possibility/ability), Simple Past (was/were).",
+            "Vocabulary": "Countries, nationalities, languages, capitals, tourist attractions, school rules.",
+            "Reading": "Short texts about school life and cultural exchanges.",
+            "Speaking": "Introducing oneself, describing countries and tourist spots.",
+            "Writing": "A short paragraph about school rules or a travel destination.",
+            "Pronunciation": "Long and short vowels: /æ/, /ɑː/, /eɪ/. Consonants: /b/, /k/, /d/."
         },
         "Theme 2: Classroom Life": {
-            "Grammar": "Simple Present (rutinler), Present Continuous (şimdiki zaman), Imperatives (talimatlar).",
-            "Vocabulary": "Sınıf eşyaları, ders çalışma alışkanlıkları, talimatlar, çift/grup çalışması ifadeleri.",
-            "Reading": "Sınıf içi iletişim, ders çalışma alışkanlıkları, not alma üzerine metinler.",
-            "Speaking": "Günlük rutinleri veya sınıf aktivitelerini tarif etme.",
-            "Writing": "Tipik bir okul günü veya ders çalışma alışkanlıkları hakkında yazma.",
-            "Pronunciation": "Ünlüler: /e/, /ae/. Ünsüzler: /f/, /g/, /dʒ/, /h/."
+            "Grammar": "Simple Present (routines), Adverbs of frequency, Imperatives.",
+            "Vocabulary": "Daily and study routines, classroom objects, instructions.",
+            "Reading": "Texts on daily routines and study habits.",
+            "Speaking": "Describing daily routines or a typical school day.",
+            "Writing": "A paragraph about personal study habits.",
+            "Pronunciation": "Vowels: /e/, /æ/. Consonants: /f/, /g/, /dʒ/, /h/."
         },
         "Theme 3: Personal Life": {
-            "Grammar": "Sıfatlar ve zarflar, 'too'/'enough', like/love/hate + -ing.",
-            "Vocabulary": "Görünüş ve kişilik, hobiler, ilgi alanları, günlük rutinler.",
-            "Reading": "Kişisel tanıtımlar, günlük yaşam, hobiler ve kısa anlatılar.",
-            "Speaking": "Kişilik veya hobileri tarif etme.",
-            "Writing": "Bir arkadaşın görünüşünü veya kişiliğini tarif etme.",
-            "Pronunciation": "Ünlüler: /i:/, /ɪ/, /aɪ/. Ünsüzler: /ʒ/, /k/, /l/."
+            "Grammar": "Adjectives (personality/appearance), 'too'/'enough'.",
+            "Vocabulary": "Physical appearance, personality traits, hobbies.",
+            "Reading": "Descriptions of people, personal blogs about hobbies.",
+            "Speaking": "Describing a friend's personality or appearance.",
+            "Writing": "A short description of a family member or a famous person.",
+            "Pronunciation": "Vowels: /iː/, /ɪ/, /aɪ/. Consonants: /ʒ/, /k/, /l/."
         },
         "Theme 4: Family Life": {
-            "Grammar": "Simple Present (meslekler ve rutinler), Prepositions of place (in/on/at), Relative clauses (who/which/that).",
-            "Vocabulary": "Aile bireyleri, meslekler ve iş yerleri, evdeki roller.",
-            "Reading": "Aile bireylerinin meslekleri ve günlük düzenleri üzerine metinler.",
-            "Speaking": "Aile rolleri veya meslekler hakkında konuşma.",
-            "Writing": "Aile rutinleri veya ev işleri hakkında yazma.",
-            "Pronunciation": "Ünlüler: /æ/, /ʌ/. Ünsüzler: /m/, /n/."
+            "Grammar": "Simple Present (jobs and work routines), Prepositions of place (in/on/at for workplaces).",
+            "Vocabulary": "Family members, jobs, workplaces, work activities.",
+            "Reading": "Texts about different family members' jobs and their daily routines.",
+            "Speaking": "Talking about family members' occupations.",
+            "Writing": "A paragraph about a family member's job.",
+            "Pronunciation": "Vowels: /ɒ/, /ɔː/. Consonants: /m/, /n/, /p/."
         },
-        "Theme 5: House & Neighbourhood": {
-            "Grammar": "Present Continuous (ev içi etkinlikler), There is/are, Quantifiers (some/any/much/many).",
-            "Vocabulary": "Ev tipleri, odalar, mobilyalar, ev işleri, mahalledeki yerler.",
-            "Reading": "Ev tanıtımları, mahalle özellikleri, ev iş bölümüyle ilgili metinler.",
-            "Speaking": "Evini veya mahalleni tarif etme.",
-            "Writing": "Ev işleri veya yerel yerler hakkında yazma.",
-            "Pronunciation": "Ünlüler: /oʊ/, /u:/. Ünsüzler: /p/, /t/."
+         "Theme 5: House & Neighbourhood": {
+            "Grammar": "Present Continuous, There is/are, Possessive adjectives.",
+            "Vocabulary": "Types of houses, rooms, furniture, household chores.",
+            "Reading": "Descriptions of houses or neighborhoods.",
+            "Speaking": "Describing your own house or what people are doing in a picture.",
+            "Writing": "A short text about your dream house.",
+            "Pronunciation": "Consonants: /q/ (as in quick), /r/, /s/, /ʃ/ (as in shower)."
         },
         "Theme 6: City & Country": {
-            "Grammar": "Present Simple vs Present Continuous (karşılaştırma), Comparative/Superlative adjectives, 'or' for options.",
-            "Vocabulary": "Şehir ve kır hayatı, ulaşım, yemekler ve festivaller, yer tanımlama.",
-            "Reading": "Şehir-kır karşılaştırmaları, yer tanıtımları, yerel yemekler ve festivaller.",
-            "Speaking": "Şehir ve kır hayatını karşılaştırma.",
-            "Writing": "Sevdiğin bir yer veya festival hakkında yazma.",
-            "Pronunciation": "Ünlüler: /ɛ/, /ɔ/. Ünsüzler: /r/, /s/."
+            "Grammar": "Present Simple vs. Present Continuous, Wh- questions, 'or' for options.",
+            "Vocabulary": "Food culture, food festivals, ingredients, local and international dishes.",
+            "Reading": "Texts about food festivals or traditional cuisines.",
+            "Speaking": "Role-playing at a food festival, asking for options.",
+            "Writing": "A blog post about a food festival you attended.",
+            "Pronunciation": "Vowels: /uː/, /ʊ/. Consonants: /t/, /ð/, /θ/, /v/."
         },
         "Theme 7: World & Nature": {
-            "Grammar": "Past Simple (was/were), Modal 'should' (öneri), Must/mustn't (kurallar).",
-            "Vocabulary": "Nesli tükenen hayvanlar, yaşam alanları, çevre sorunları, hava ve iklim.",
-            "Reading": "Doğa koruma, nesli tükenen türler ve çevre sorunlarına dair metinler.",
-            "Speaking": "Çevre sorunları veya çözümleri tartışma.",
-            "Writing": "Doğayı koruma veya iklim değişikliği hakkında yazma.",
-            "Pronunciation": "Ünlüler: /ʊ/, /u/. Ünsüzler: /v/, /w/."
+            "Grammar": "Simple Past (was/were, there was/were), Modal 'should' (advice).",
+            "Vocabulary": "Endangered animals, habitats, environmental problems (habitat loss, pollution).",
+            "Reading": "Texts about endangered species and conservation efforts.",
+            "Speaking": "Giving advice on how to protect nature.",
+            "Writing": "A short paragraph about an endangered animal.",
+            "Pronunciation": "Diphthongs: /eə/ (as in bear), /ɪə/ (as in deer). Consonants: /w/, /ks/."
         },
         "Theme 8: Universe & Future": {
-            "Grammar": "Future Simple (will) – tahmin ve inançlar, be going to (planlar), Conditionals Type 0–1 (temel).",
-            "Vocabulary": "Teknoloji, uzay, bilimkurgu, film türleri, gelecekteki meslekler.",
-            "Reading": "Gelecek teknolojileri, uzay temalı kısa metinler ve film tanıtımları.",
-            "Speaking": "Gelecek planları veya teknoloji hakkında konuşma.",
-            "Writing": "Gelecek tahminleri veya bilimkurgu senaryoları yazma.",
-            "Pronunciation": "Ünlüler: /ɪə/, /eə/. Ünsüzler: /j/, /z/."
+            "Grammar": "Future Simple (will) for predictions and beliefs, Simple Present for describing films.",
+            "Vocabulary": "Films, film genres, futuristic ideas (robots, space exploration), technology.",
+            "Reading": "Film reviews or short texts about future technology.",
+            "Speaking": "Making predictions about the future, talking about favorite films.",
+            "Writing": "A short futuristic story or a review of a sci-fi film.",
+            "Pronunciation": "Diphthong: /əʊ/ (as in show). Consonants: /j/ (as in year), /z/."
         }
     }
 }
 
 # -----------------------------
-# SIDEBAR
+# SIDEBAR - KULLANICI ARAYÜZÜ
 # -----------------------------
 with st.sidebar:
-    st.header("Seçenekler")
-    selected_grade = st.selectbox("📚 MEB Sınıfı", list(meb_curriculum.keys()))
+    st.header("1. Adım: Seçimlerinizi Yapın")
+    selected_grade = "9. Sınıf"
     units = list(meb_curriculum[selected_grade].keys())
-    selected_unit = st.selectbox("Ünite Seç", units)
+    selected_unit = st.selectbox("Ünite Seçin", units)
+    
     selected_tool = st.radio(
-        "Üretim Modu Seç",
-        ["Çalışma Sayfası", "Ders Planı", "Değerlendirme Rubriği", "Ek Çalışma"]
+        "Materyal Türü Seçin",
+        ["Çalışma Sayfası", "Ders Planı", "Dinleme Aktivitesi Senaryosu", "Ünite Tekrar Testi", "Değerlendirme Rubriği", "Ek Çalışma (Farklılaştırılmış)"],
+        captions=["Alıştırma kağıdı üretir", "40dk'lık ders planı oluşturur", "Dinleme metni ve soruları yazar", "Üniteyi özetleyen test hazırlar", "Puanlama anahtarı oluşturur", "Destekleyici veya ileri düzey aktivite"]
     )
 
-    # Beceri seçimi gereken araçlar
-    skill_needed = selected_tool in ["Çalışma Sayfası", "Değerlendirme Rubriği", "Ek Çalışma"]
+    skill_needed = selected_tool in ["Çalışma Sayfası", "Değerlendirme Rubriği", "Ek Çalışma (Farklılaştırılmış)"]
     if skill_needed:
         skill_options = list(meb_curriculum[selected_grade][selected_unit].keys())
-        selected_skill = st.selectbox("Beceri Seç (Dilbilgisi / Kelime / Okuma / Konuşma / Yazma / Telaffuz)", skill_options)
-    
-    include_clil = st.checkbox("CLIL İçeriği Ekle (ör. siber güvenlik, teknoloji)")
-    include_reflection = st.checkbox("Yansıtma Aktivitesi Ekle (ör. öz değerlendirme)")
-    
-    if selected_tool in ["Çalışma Sayfası", "Ek Çalışma"]:
-        num_questions = st.slider("Soru Sayısı", 1, 10, 6)  # Gemini için optimize
-    
-    if selected_tool == "Ek Çalışma":
-        differentiation_type = st.radio("Çalışma Türü", ["Destekleyici", "İleri"])
-
-# -----------------------------
-# PROMPT FONKSİYONLARI
-# -----------------------------
-def generate_ai_worksheet_prompt(grade, unit, skill, num_questions):
-    topic_info = meb_curriculum[grade][unit].get(skill, "")
-    prompt = f"""
-You are an expert English teacher creating materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
-Requirements:
-- Unit: "{unit}"
-- Focus skill: "{skill}"
-- Number of questions: exactly {num_questions}
-- Question types: mix of multiple choice, fill-in-the-blanks, true/false. For 'Reading', include a short original text (100-150 words) followed by questions. For 'Speaking', include role-play or discussion prompts. For 'Writing', include short writing tasks (50-100 words). For 'Pronunciation', include drills for specific sounds listed in the curriculum.
-- Start with a clear activity title and a one-sentence instruction for students.
-- End with an "Answer Key" section listing only correct answers (no explanations).
-- Ensure content aligns with the MEB 2025 English curriculum (Waymark series).
-Topics to cover: {topic_info}
-"""
-    if include_clil:
-        prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
-    if include_reflection:
-        prompt += "\n- Include a reflection question for students to evaluate their learning process."
-    return prompt.strip()
-
-def generate_lesson_plan_prompt(grade, unit):
-    unit_data = meb_curriculum[grade][unit]
-    topic_info = " | ".join([f"{k}: {v}" for k, v in unit_data.items()])
-    prompt = f"""
-You are an English curriculum expert creating a lesson plan for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
-Unit: "{unit}"
-Include:
-- Title
-- Objective (1-2 sentences)
-- Stages with durations:
-  * Warm-Up / Lead-In (engaging activity, 5-10 min)
-  * Main Activity (grammar, vocabulary, speaking, writing, or pronunciation practice, 30-35 min)
-  * Wrap-Up / Consolidation (quick review or check, 5-10 min)
-- Key vocabulary, grammar, and pronunciation list
-- Materials (simple list, e.g., worksheets, whiteboard)
-- Align with the MEB 2025 English curriculum (Waymark series).
-Key topics: {topic_info}
-"""
-    if include_clil:
-        prompt += "\n- Include a CLIL activity related to cybersecurity, digital technology, or interdisciplinary topics."
-    if include_reflection:
-        prompt += "\n- Include a reflection activity for students to evaluate their learning process."
-    return prompt.strip()
-
-def generate_rubric_prompt(grade, unit, skill):
-    return f"""
-You are an EFL assessment specialist creating a grading rubric for {skill} in {grade} (CEFR B1.1, MEB 2025 Curriculum).
-Unit: "{unit}"
-Include:
-- At least 3 criteria relevant to {skill} (e.g., accuracy, fluency, content for Writing).
-- 3 performance levels: Excellent, Good, Needs Improvement.
-- Clear, concise descriptors for each level under each criterion.
-- Use headings and bullet points (no tables).
-- Align with the MEB 2025 English curriculum (Waymark series).
-Topics: {meb_curriculum[grade][unit].get(skill, "")}
-""".strip()
-
-def generate_differentiation_prompt(grade, unit, skill, diff_type):
-    topic_info = meb_curriculum[grade][unit].get(skill, "")
-    if diff_type == "Destekleyici":
-        intro = "Create a SUPPORTING activity for students who need extra help."
-        detail = "Use simpler, scaffolded tasks (e.g., guided fill-in-the-blanks, matching, controlled practice)."
+        selected_skill = st.selectbox("Odaklanılacak Beceriyi Seçin", skill_options)
     else:
-        intro = "Create an ADVANCED activity for students ready for more challenge."
-        detail = "Require higher-order thinking (e.g., short opinion writing, problem-solving, mini project, debate prompts)."
-    
-    prompt = f"""
-You are an expert English teacher creating differentiated materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
-{intro}
-Unit: "{unit}"
-Focus: "{skill}"
-Instructions:
-- Activity: Provide a clear, classroom-ready task. {detail}
-- Objective: State the learning goal for this group.
-- Implementation: Step-by-step how the teacher runs it (timings optional).
-- Align with the MEB 2025 English curriculum (Waymark series).
-Topics: {topic_info}
+        selected_skill = "Genel"
+
+    with st.expander("Gelişmiş Ayarlar"):
+        include_clil = st.checkbox("CLIL İçeriği Ekle (Teknoloji, Bilim vb.)")
+        include_reflection = st.checkbox("Yansıtma Aktivitesi Ekle (Öz değerlendirme)")
+        
+        if selected_tool in ["Çalışma Sayfası", "Ünite Tekrar Testi"]:
+            num_questions = st.slider("Soru Sayısı", 3, 10, 6)
+        
+        if selected_tool == "Ek Çalışma (Farklılaştırılmış)":
+            differentiation_type = st.radio("Aktivite Düzeyi", ["Destekleyici (Supporting)", "İleri Düzey (Expansion)"])
+
+# -----------------------------
+# PROMPT OLUŞTURMA FONKSİYONLARI
+# -----------------------------
+def create_prompt(tool, **kwargs):
+    base_prompt = f"""
+Act as an expert English teacher and material developer for the Turkish Ministry of Education's new 'Century of Türkiye' model.
+Your task is to create a high-quality, practical, and engaging material for a {kwargs.get('grade')} class (CEFR B1.1), fully aligned with the WAYMARK series.
+The content must be entirely in English, unless specified.
+Unit: "{kwargs.get('unit')}"
 """
-    if include_clil:
-        prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
-    if include_reflection:
-        prompt += "\n- Include a reflection question for students to evaluate their learning."
-    return prompt.strip()
+    
+    prompts = {
+        "Çalışma Sayfası": f"""
+        Focus Skill: "{kwargs.get('skill')}"
+        Topic: "{meb_curriculum[kwargs.get('grade')][kwargs.get('unit')].get(kwargs.get('skill'), '')}"
+        
+        Create a worksheet with exactly {kwargs.get('num_questions')} questions.
+        - Mix question types: multiple choice, fill-in-the-blanks, matching, true/false.
+        - Start with a clear title (e.g., 'Theme 1: Grammar Worksheet') and a one-sentence instruction for students.
+        - End with a separate 'Answer Key' section listing only the correct answers.
+        """,
+        "Ders Planı": f"""
+        Create a 40-minute lesson plan.
+        - Include: Objective, Key Language (Vocab & Grammar), Materials.
+        - Structure in three stages with timings: Warm-Up/Lead-In (5-10 min), Main Activity (25-30 min), and Wrap-Up/Consolidation (5 min).
+        - Activities must be communicative and interactive.
+        """,
+        "Dinleme Aktivitesi Senaryosu": f"""
+        Create a listening activity.
+        - Write a short, natural-sounding audio script (dialogue or monologue, 100-150 words) suitable for B1.1 level. The script must include vocabulary and grammar from the unit.
+        - After the script, create 5 comprehension questions (e.g., multiple choice, True/False).
+        - End with a separate 'Audio Script' section and an 'Answer Key' section.
+        """,
+        "Ünite Tekrar Testi": f"""
+        Create a cumulative unit review test with {kwargs.get('num_questions')} questions.
+        - The test must cover at least 3 different skills from the unit (e.g., Grammar, Vocabulary, Reading).
+        - Include a variety of question formats.
+        - End with a separate 'Answer Key' section.
+        """,
+        "Değerlendirme Rubriği": f"""
+        Focus Skill: "{kwargs.get('skill')}"
+        Create a simple and clear assessment rubric for a speaking or writing task.
+        - Use 3 performance levels: 'Excellent (4 pts)', 'Good (3 pts)', 'Needs Improvement (1-2 pts)'.
+        - Define 3 clear criteria relevant to the skill (e.g., for Speaking: Fluency, Accuracy, Content).
+        - Provide a brief, clear descriptor for each level under each criterion.
+        """,
+        "Ek Çalışma (Farklılaştırılmış)": f"""
+        Focus Skill: "{kwargs.get('skill')}"
+        Activity Level: "{kwargs.get('diff_type')}"
+        
+        Create a differentiated activity.
+        - If 'Supporting', design a highly-structured, scaffolded task (e.g., matching with pictures, guided sentence completion).
+        - If 'Expansion', design a task that requires more creative or critical thinking (e.g., a short role-play scenario, a problem-solving task, an opinion paragraph).
+        - Include a clear objective and step-by-step implementation instructions for the teacher.
+        """
+    }
+    
+    final_prompt = base_prompt + prompts[tool]
+    
+    if kwargs.get('clil'):
+        final_prompt += "\n- IMPORTANT: Integrate a CLIL (Content and Language Integrated Learning) component related to technology, science, or digital literacy."
+    if kwargs.get('reflection'):
+        final_prompt += "\n- IMPORTANT: Add a short, simple reflection question at the end for students to think about their learning (e.g., 'What was the most difficult part for you?')."
+        
+    return final_prompt.strip()
 
 # -----------------------------
-# PDF OLUŞTURUCU
+# GEMINI API ÇAĞRISI (CACHING İLE)
 # -----------------------------
-def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False, grade="9. Sınıf", unit=""):
-    pdf = canvas.Canvas(filename, pagesize=A4)
-    pdf.setTitle(f"MEB English Material - {grade} - {unit}")
-    pdf.setAuthor("QuickSheet AI Assistant (Powered by Gemini)")
-    pdf.setCreator("QuickSheet AI Assistant")
+@st.cache_data
+def call_gemini_api(_prompt_text):
+    try:
+        response = model.generate_content(
+            _prompt_text,
+            generation_config={
+                "max_output_tokens": 2048,
+                "temperature": 0.7
+            }
+        )
+        return response.text.strip()
+    except Exception as e:
+        return f"API Hatası: {e}"
 
-    # Başlık ve üst bilgi
-    y = 800
-    pdf.setFont("DejaVuSans-Bold", 16)
-    pdf.drawCentredString(A4[0] / 2.0, y, f"MEB English Material - {grade} - {unit}")
-    y -= 30
-    pdf.setFont("DejaVuSans", 10)
-    pdf.drawString(50, y, f"Generated by QuickSheet AI Assistant (Powered by Gemini)")
-    y -= 20
-
-    lines = content.split("\n")
-    is_answer_key = False
-    question_number = 1
-
+# -----------------------------
+# ÇIKTI OLUŞTURMA FONKSİYONLARI (PDF & DOCX)
+# -----------------------------
+def create_pdf(content, grade, unit):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    def draw_page_content(page_number):
+        p.setFont("DejaVuSans-Bold", 14)
+        p.drawCentredString(width / 2.0, height - 40, f"{grade} - {unit}")
+        p.setFont("DejaVuSans", 8)
+        p.drawCentredString(width / 2.0, 30, f"QuickSheet v2.0 tarafından üretilmiştir. - Sayfa {page_number}")
+        
+    page_num = 1
+    draw_page_content(page_num)
+    y = height - 70
+    
+    lines = content.split('\n')
     for line in lines:
-        text = line.rstrip()
-
-        # "Answer Key" bölümünü öğrenci kopyasında gizle
-        if is_worksheet and "Answer Key" in text:
-            is_answer_key = True
-            if is_teacher_copy:
-                pdf.showPage()
-                y = 800
-                pdf.setFont("DejaVuSans-Bold", 12)
-                pdf.drawString(50, y, "Answer Key")
-                y -= 20
-                pdf.setFont("DejaVuSans", 10)
-            else:
-                continue
-
-        if is_worksheet and not is_teacher_copy and is_answer_key:
-            continue
-
-        # Soru numaralandırma
-        if is_worksheet and not is_answer_key and text.strip() and text[0].isdigit():
-            text = f"{question_number}. {text.lstrip('0123456789. ')}"
-            question_number += 1
-
-        # Başlık için kalın font
-        if text.startswith("# "):
-            pdf.setFont("DejaVuSans-Bold", 12)
-            text = text[2:]
-        elif text.startswith("## "):
-            pdf.setFont("DejaVuSans-Bold", 11)
-            text = text[3:]
+        line = line.strip()
+        
+        # Markdown Başlık ve Kalın Yazı Tespiti
+        font_name = "DejaVuSans"
+        font_size = 10
+        if line.startswith('# '):
+            font_name = "DejaVuSans-Bold"
+            font_size = 12
+            line = line[2:]
+        elif '**' in line:
+            # Basit bold tespiti: **metin**
+            parts = re.split(r'(\*\*.*?\*\*)', line)
         else:
-            pdf.setFont("DejaVuSans", 10)
+            parts = [line]
 
-        # Uzun satırları böl
-        if len(text) > 80:
-            words = text.split()
-            current_line = ""
-            for word in words:
-                if pdf.stringWidth(current_line + word, "DejaVuSans", 10) < A4[0] - 100:
-                    current_line += word + " "
-                else:
-                    pdf.drawString(50, y, current_line.strip())
-                    y -= 14
-                    current_line = word + " "
-                    if y < 60:
-                        pdf.showPage()
-                        y = 800
-                        pdf.setFont("DejaVuSans", 10)
-                        pdf.drawString(50, y, f"MEB English Material - {grade} - {unit} (Continued)")
-                        y -= 20
-            text = current_line.strip()
-
-        # Sayfa altına gelindiyse yeni sayfa
         if y < 60:
-            pdf.showPage()
-            y = 800
-            pdf.setFont("DejaVuSans", 10)
-            pdf.drawString(50, y, f"MEB English Material - {grade} - {unit} (Continued)")
-            y -= 20
+            p.showPage()
+            page_num += 1
+            draw_page_content(page_num)
+            y = height - 70
 
-        pdf.drawString(50, y, text)
+        x = 50
+        for part in parts:
+            if part.startswith('**') and part.endswith('**'):
+                p.setFont("DejaVuSans-Bold", font_size)
+                text_to_draw = part[2:-2]
+            else:
+                p.setFont(font_name, font_size)
+                text_to_draw = part
+            
+            p.drawString(x, y, text_to_draw)
+            x += p.stringWidth(text_to_draw, p._fontname, p._fontsize)
+
         y -= 14
 
-    pdf.save()
-    return filename
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+def create_docx(content):
+    buffer = io.BytesIO()
+    doc = Document()
+    doc.styles['Normal'].font.name = 'Calibri'
+    doc.styles['Normal'].font.size = Pt(11)
+
+    for line in content.split('\n'):
+        line = line.strip()
+        if line.startswith('# '):
+            p = doc.add_paragraph(line[2:], style='Heading 1')
+        elif '**' in line:
+            # Basit bold tespiti
+            p = doc.add_paragraph()
+            parts = re.split(r'(\*\*.*?\*\*)', line)
+            for part in parts:
+                if part.startswith('**') and part.endswith('**'):
+                    p.add_run(part[2:-2]).bold = True
+                else:
+                    p.add_run(part)
+        else:
+            doc.add_paragraph(line)
+            
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
 
 # -----------------------------
-# ANA AKIŞ
+# ANA UYGULAMA AKIŞI
 # -----------------------------
-if st.button("✨ İçeriği Üret", key="generate_content"):
-    with st.spinner(f"{selected_tool} oluşturuluyor... (Gemini ile)"):
+if st.button("✨ Materyali Üret", type="primary", use_container_width=True):
+    st.session_state.last_tool = selected_tool # Store the current tool
+    
+    with st.spinner(f"{selected_tool} üretiliyor... Lütfen bekleyin, bu işlem 30 saniye kadar sürebilir."):
+        prompt_args = {
+            "grade": selected_grade,
+            "unit": selected_unit,
+            "skill": selected_skill,
+            "clil": include_clil,
+            "reflection": include_reflection,
+        }
+        if selected_tool in ["Çalışma Sayfası", "Ünite Tekrar Testi"]:
+            prompt_args["num_questions"] = num_questions
+        if selected_tool == "Ek Çalışma (Farklılaştırılmış)":
+            prompt_args["diff_type"] = differentiation_type.split(" ")[0]
+
+        final_prompt = create_prompt(selected_tool, **prompt_args)
+        
+        # Call Gemini and store result in session state
+        st.session_state.ai_content = call_gemini_api(final_prompt)
+
+
+# Eğer üretilmiş içerik varsa, göster ve indirme butonlarını sun
+if st.session_state.ai_content:
+    st.subheader(f"Oluşturulan İçerik: {st.session_state.last_tool}")
+    
+    # Text area for editing
+    edited_content = st.text_area(
+        "İçeriği Düzenleyin (İndirmeden önce değişiklik yapabilirsiniz)",
+        value=st.session_state.ai_content,
+        height=400,
+        key="edited_content"
+    )
+    
+    st.subheader("2. Adım: İndirin")
+    col1, col2 = st.columns(2)
+
+    # DOCX İndirme
+    with col1:
         try:
-            if selected_tool == "Çalışma Sayfası":
-                prompt_text = generate_ai_worksheet_prompt(
-                    selected_grade, selected_unit, selected_skill, num_questions
-                )
-            elif selected_tool == "Ders Planı":
-                prompt_text = generate_lesson_plan_prompt(
-                    selected_grade, selected_unit
-                )
-            elif selected_tool == "Değerlendirme Rubriği":
-                prompt_text = generate_rubric_prompt(
-                    selected_grade, selected_unit, selected_skill
-                )
-            elif selected_tool == "Ek Çalışma":
-                prompt_text = generate_differentiation_prompt(
-                    selected_grade, selected_unit, selected_skill, differentiation_type
-                )
-            else:
-                st.error("Geçersiz üretim modu seçimi.")
-                st.stop()
-
-            # Gemini API ile içerik üret
-            for attempt in range(3):  # 3 deneme
-                try:
-                    response = model.generate_content(
-                        prompt_text,
-                        generation_config={
-                            "max_output_tokens": 1500,
-                            "temperature": 0.7
-                        }
-                    )
-                    ai_content = response.text.strip()
-                    if ai_content:
-                        break
-                except Exception as api_error:
-                    st.warning(f"Deneme {attempt+1} başarısız: {api_error}. Yeniden deneniyor...")
-                    time.sleep(2)
-            else:
-                st.error("Gemini API’den yanıt alınamadı. Secrets’taki GEMINI_API_KEY’i kontrol edin.")
-                st.stop()
-
-            if not ai_content:
-                st.error("Model boş içerik döndürdü. Promptu gözden geçirin veya tekrar deneyin.")
-                st.stop()
-
-            st.subheader(f"Oluşturulan: {selected_tool}")
-            edited_content = st.text_area("İçeriği Düzenle", ai_content, height=500, key="edit_content")
-
-            # PDF üretimi
-            if selected_tool == "Çalışma Sayfası":
-                student_pdf = create_pdf(
-                    edited_content, "ogrenci_calisma_sayfasi.pdf",
-                    is_teacher_copy=False, is_worksheet=True,
-                    grade=selected_grade, unit=selected_unit
-                )
-                with open(student_pdf, "rb") as f:
-                    st.download_button("📄 Öğrenci PDF İndir", f, file_name="ogrenci_calisma_sayfasi.pdf", key="student_pdf")
-
-                teacher_pdf = create_pdf(
-                    edited_content, "ogretmen_calisma_sayfasi.pdf",
-                    is_teacher_copy=True, is_worksheet=True,
-                    grade=selected_grade, unit=selected_unit
-                )
-                with open(teacher_pdf, "rb") as f:
-                    st.download_button("🔑 Öğretmen PDF (Cevap Anahtarlı) İndir", f, file_name="ogretmen_calisma_sayfasi.pdf", key="teacher_pdf")
-
-            else:
-                out_name = f"{selected_tool.lower().replace(' ', '_')}.pdf"
-                pdf_path = create_pdf(edited_content, out_name, is_teacher_copy=False, is_worksheet=False,
-                                      grade=selected_grade, unit=selected_unit)
-                with open(pdf_path, "rb") as f:
-                    st.download_button("📄 PDF Olarak İndir", f, file_name=out_name, key="single_pdf")
-
-            st.success("İçerik başarıyla oluşturuldu! (Gemini ile)")
-
+            docx_buffer = create_docx(edited_content)
+            st.download_button(
+                label="📄 Word Olarak İndir (.docx)",
+                data=docx_buffer,
+                file_name=f"{st.session_state.last_tool.replace(' ', '_').lower()}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
         except Exception as e:
-            st.error(f"Hata oluştu: {e}. Secrets’taki GEMINI_API_KEY’i kontrol edin.")
+            st.error(f"Word dosyası oluşturulurken hata: {e}")
+
+    # PDF İndirme
+    with col2:
+        if font_loaded:
+            try:
+                pdf_buffer = create_pdf(edited_content, selected_grade, selected_unit)
+                st.download_button(
+                    label="📑 PDF Olarak İndir",
+                    data=pdf_buffer,
+                    file_name=f"{st.session_state.last_tool.replace(' ', '_').lower()}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"PDF dosyası oluşturulurken hata: {e}")
+        else:
+            st.warning("Font yüklenemediği için PDF çıktısı devre dışı.")
+
 
 # -----------------------------
-# İPUCU VE NOTLAR
+# ALT BİLGİ VE NOTLAR
 # -----------------------------
-st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6) veya promptu düzenleyin. Gemini API ücretsiz tier’da sınırlı istek sunar.")
-st.markdown("**Not**: Bu uygulama Google Gemini API (ücretsiz tier) ile çalışır. MEB 2025 müfredatına uygundur. Secrets’a GEMINI_API_KEY ekleyin: https://ai.google.dev")
+st.divider()
+st.caption("⚡ **QuickSheet v2.0** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
+st.caption("**Not:** En iyi sonuçlar için spesifik ve net seçimler yapın. Üretilen içeriği indirmeden önce mutlaka kontrol edin ve düzenleyin.")
