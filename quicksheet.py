@@ -5,8 +5,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from transformers import pipeline
 import time
+import google.generativeai as genai
 
 # -----------------------------
 # SAYFA YAPISI
@@ -15,12 +15,14 @@ st.set_page_config(page_title="QuickSheet", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet: MEB İngilizce Öğretmen Asistanı")
 st.markdown("9. Sınıf (B1.1) müfredatına uygun çalışma kağıtları, ders planları, rubricler ve ek aktiviteler üretin.")
 
-# Hugging Face modelini başlat (Mistral-7B-Instruct-v0.2)
-try:
-    generator = pipeline("text-generation", model="mistralai/Mixtral-7B-Instruct-v0.2", device=-1)  # CPU için
-except Exception as e:
-    st.error(f"Model yüklenemedi: {e}. Hugging Face Spaces’te yeterli kaynak olduğundan emin olun.")
+# Gemini API anahtarı
+API_KEY = st.secrets.get("GEMINI_API_KEY", st.text_input("Gemini API Anahtarınızı Girin", type="password"))
+if not API_KEY:
+    st.error("Lütfen bir Gemini API anahtarı girin. Ücretsiz anahtar için: https://ai.google.dev")
     st.stop()
+
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # -----------------------------
 # FONT (Türkçe karakter desteği)
@@ -134,7 +136,7 @@ with st.sidebar:
     include_reflection = st.checkbox("Yansıtma Aktivitesi Ekle (ör. öz değerlendirme)")
     
     if selected_tool in ["Çalışma Sayfası", "Ek Çalışma"]:
-        num_questions = st.slider("Soru Sayısı", 1, 8, 6)  # Mistral-7B için optimize
+        num_questions = st.slider("Soru Sayısı", 1, 10, 6)  # Gemini için optimize
     
     if selected_tool == "Ek Çalışma":
         differentiation_type = st.radio("Çalışma Türü", ["Destekleyici", "İleri"])
@@ -145,7 +147,7 @@ with st.sidebar:
 def generate_ai_worksheet_prompt(grade, unit, skill, num_questions):
     topic_info = meb_curriculum[grade][unit].get(skill, "")
     prompt = f"""
-[INST] You are an expert English teacher creating materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+You are an expert English teacher creating materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 Requirements:
 - Unit: "{unit}"
 - Focus skill: "{skill}"
@@ -160,14 +162,13 @@ Topics to cover: {topic_info}
         prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection question for students to evaluate their learning process."
-    prompt += "\n[/INST]"
     return prompt.strip()
 
 def generate_lesson_plan_prompt(grade, unit):
     unit_data = meb_curriculum[grade][unit]
     topic_info = " | ".join([f"{k}: {v}" for k, v in unit_data.items()])
     prompt = f"""
-[INST] You are an English curriculum expert creating a lesson plan for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+You are an English curriculum expert creating a lesson plan for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 Unit: "{unit}"
 Include:
 - Title
@@ -185,12 +186,11 @@ Key topics: {topic_info}
         prompt += "\n- Include a CLIL activity related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection activity for students to evaluate their learning process."
-    prompt += "\n[/INST]"
     return prompt.strip()
 
 def generate_rubric_prompt(grade, unit, skill):
-    prompt = f"""
-[INST] You are an EFL assessment specialist creating a grading rubric for {skill} in {grade} (CEFR B1.1, MEB 2025 Curriculum).
+    return f"""
+You are an EFL assessment specialist creating a grading rubric for {skill} in {grade} (CEFR B1.1, MEB 2025 Curriculum).
 Unit: "{unit}"
 Include:
 - At least 3 criteria relevant to {skill} (e.g., accuracy, fluency, content for Writing).
@@ -199,9 +199,7 @@ Include:
 - Use headings and bullet points (no tables).
 - Align with the MEB 2025 English curriculum (Waymark series).
 Topics: {meb_curriculum[grade][unit].get(skill, "")}
-[/INST]
-"""
-    return prompt.strip()
+""".strip()
 
 def generate_differentiation_prompt(grade, unit, skill, diff_type):
     topic_info = meb_curriculum[grade][unit].get(skill, "")
@@ -213,7 +211,7 @@ def generate_differentiation_prompt(grade, unit, skill, diff_type):
         detail = "Require higher-order thinking (e.g., short opinion writing, problem-solving, mini project, debate prompts)."
     
     prompt = f"""
-[INST] You are an expert English teacher creating differentiated materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+You are an expert English teacher creating differentiated materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 {intro}
 Unit: "{unit}"
 Focus: "{skill}"
@@ -228,7 +226,6 @@ Topics: {topic_info}
         prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection question for students to evaluate their learning."
-    prompt += "\n[/INST]"
     return prompt.strip()
 
 # -----------------------------
@@ -237,7 +234,7 @@ Topics: {topic_info}
 def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False, grade="9. Sınıf", unit=""):
     pdf = canvas.Canvas(filename, pagesize=A4)
     pdf.setTitle(f"MEB English Material - {grade} - {unit}")
-    pdf.setAuthor("QuickSheet AI Assistant (Powered by Hugging Face)")
+    pdf.setAuthor("QuickSheet AI Assistant (Powered by Gemini)")
     pdf.setCreator("QuickSheet AI Assistant")
 
     # Başlık ve üst bilgi
@@ -246,7 +243,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False, gra
     pdf.drawCentredString(A4[0] / 2.0, y, f"MEB English Material - {grade} - {unit}")
     y -= 30
     pdf.setFont("DejaVuSans", 10)
-    pdf.drawString(50, y, f"Generated by QuickSheet AI Assistant (Powered by Hugging Face)")
+    pdf.drawString(50, y, f"Generated by QuickSheet AI Assistant (Powered by Gemini)")
     y -= 20
 
     lines = content.split("\n")
@@ -324,7 +321,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False, gra
 # ANA AKIŞ
 # -----------------------------
 if st.button("✨ İçeriği Üret", key="generate_content"):
-    with st.spinner(f"{selected_tool} oluşturuluyor... (Hugging Face Spaces ile)"):
+    with st.spinner(f"{selected_tool} oluşturuluyor... (Gemini ile)"):
         try:
             if selected_tool == "Çalışma Sayfası":
                 prompt_text = generate_ai_worksheet_prompt(
@@ -346,25 +343,24 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
                 st.error("Geçersiz üretim modu seçimi.")
                 st.stop()
 
-            # Mistral-7B ile içerik üret
+            # Gemini API ile içerik üret
             for attempt in range(3):  # 3 deneme
                 try:
-                    response = generator(
+                    response = model.generate_content(
                         prompt_text,
-                        max_length=1000,  # Mistral-7B için uygun
-                        num_return_sequences=1,
-                        truncation=True,
-                        pad_token_id=generator.tokenizer.eos_token_id,
-                        temperature=0.7
+                        generation_config={
+                            "max_output_tokens": 1500,
+                            "temperature": 0.7
+                        }
                     )
-                    ai_content = response[0]["generated_text"].replace(prompt_text, "").strip()  # Promptu çıkar
+                    ai_content = response.text.strip()
                     if ai_content:
                         break
-                except Exception as model_error:
-                    st.warning(f"Deneme {attempt+1} başarısız: {model_error}. Yeniden deneniyor...")
+                except Exception as api_error:
+                    st.warning(f"Deneme {attempt+1} başarısız: {api_error}. Yeniden deneniyor...")
                     time.sleep(2)
             else:
-                st.error("Modelden yanıt alınamadı. Soru sayısını azaltın (örn. 4) veya Spaces kaynaklarını kontrol edin.")
+                st.error("Gemini API’den yanıt alınamadı. API anahtarını kontrol edin veya internet bağlantınızı doğrulayın.")
                 st.stop()
 
             if not ai_content:
@@ -399,13 +395,13 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
                 with open(pdf_path, "rb") as f:
                     st.download_button("📄 PDF Olarak İndir", f, file_name=out_name, key="single_pdf")
 
-            st.success("İçerik başarıyla oluşturuldu! (Hugging Face Spaces ile)")
+            st.success("İçerik başarıyla oluşturuldu! (Gemini ile)")
 
         except Exception as e:
-            st.error(f"Hata oluştu: {e}. Soru sayısını azaltın veya Spaces kaynaklarını kontrol edin.")
+            st.error(f"Hata oluştu: {e}. API anahtarını veya internet bağlantınızı kontrol edin.")
 
 # -----------------------------
 # İPUCU VE NOTLAR
 # -----------------------------
-st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6), promptu düzenleyin veya tekrar deneyin. Mistral-7B güçlüdür ama Spaces’in ücretsiz tier’ında kaynak sınırlıdır.")
-st.markdown("**Not**: Bu uygulama Hugging Face Spaces ve Mistral-7B (Apache 2.0 lisansı) ile çalışır. MEB 2025 müfredatına uygundur.")
+st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6), promptu düzenleyin veya tekrar deneyin. Gemini API ücretsiz tier’da sınırlı istek sunar.")
+st.markdown("**Not**: Bu uygulama Google Gemini API (ücretsiz tier) ile çalışır. MEB 2025 müfredatına uygundur. Anahtar için: https://ai.google.dev")
