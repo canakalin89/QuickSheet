@@ -18,7 +18,7 @@ import random
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v2.1", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet v2.1: Akıllı MEB İngilizce Asistanı")
-st.markdown("9. Sınıf (B1.1) 'Türkiye Yüzyılı Maarif Modeli' müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
+st.markdown("9. Sınıf (B1.1) 'Century of Türkiye' (Maarif Modeli) müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
@@ -418,6 +418,8 @@ if 'final_prompt' in st.session_state and st.session_state.final_prompt:
 
     if st.button("🚀 3. Adım: Yapay Zeka ile İçeriği Üret", use_container_width=True):
          with st.spinner(f"{st.session_state.last_tool} üretiliyor..."):
+            # Önbelleği temizleyerek her seferinde yeni ve çeşitli bir içerik üretilmesini sağla
+            call_gemini_api.clear()
             st.session_state.ai_content = call_gemini_api(edited_prompt)
             st.session_state.final_prompt = ""
 
@@ -447,4 +449,6 @@ if st.session_state.ai_content:
 
 st.divider()
 st.caption("⚡ **QuickSheet v2.1** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
+st.caption("Geliştirici: Can AKALIN | İletişim: canakalin59@gmail.com | Instagram: @can_akalin")
+
 
