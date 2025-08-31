@@ -18,7 +18,7 @@ import random
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v2.1", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet v2.1: Akıllı MEB İngilizce Asistanı")
-st.markdown("9. Sınıf (B1.1) 'Century of Türkiye' (Maarif Modeli) müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
+st.markdown("9. Sınıf (B1.1) 'Türkiye Yüzyılı' (Maarif Modeli) müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
