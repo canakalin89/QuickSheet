@@ -11,8 +11,6 @@ import requests
 
 # --- API ve Ayarlar ---
 # ÖNEMLİ: Kendi Gemini API anahtarınızı buraya ekleyin
-# (Örnek: genai.configure(api_key="AIzaSyA..."))
-# API anahtarınız doğrudan kodun içine yazılacak, bu yüzden GitHub'a yüklerken dikkatli olun.
 genai.configure(api_key="AIzaSyBSaZUaZPNMbqRyVp1uxOfibUh6y19ww5U")
 
 # Türkçe karakterler için font ayarı
@@ -263,7 +261,7 @@ if st.button("✨ İçeriği Üret"):
                         st.download_button("🔑 Öğretmen İçin Cevap Anahtarlı PDF İndir", f, file_name="ogretmen_calisma_sayfasi.pdf")
                 else:
                     pdf_path_single = create_pdf(ai_content, f"{selected_tool.lower().replace(' ', '_')}.pdf")
-                    with open(pdf_path_single, "rb") as f as f:
+                    with open(pdf_path_single, "rb") as f:
                         st.download_button(f"📄 PDF Olarak İndir", f, file_name=f"{selected_tool.lower().replace(' ', '_')}.pdf")
                 
                 st.success("İçerik başarıyla oluşturuldu!")
