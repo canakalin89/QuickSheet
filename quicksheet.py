@@ -19,11 +19,14 @@ st.set_page_config(page_title="QuickSheet v2.0", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet v2.0: Gelişmiş MEB İngilizce Öğretmen Asistanı")
 st.markdown("9. Sınıf (B1.1) 'Century of Türkiye' (Maarif Modeli) müfredatına uygun çalışma kağıtları, ders planları, dinleme etkinlikleri ve daha fazlasını üretin.")
 
-# Session State Başlatma
+# Session State Başlatma (Oturum durumunu korumak için)
 if 'ai_content' not in st.session_state:
     st.session_state.ai_content = ""
 if 'last_tool' not in st.session_state:
     st.session_state.last_tool = ""
+if 'final_prompt' not in st.session_state:
+    st.session_state.final_prompt = ""
+
 
 # Gemini API anahtarı (streamlit secrets'tan alınıyor)
 try:
@@ -264,10 +267,12 @@ def create_pdf(content, grade, unit):
     width, height = A4
     
     def draw_page_content(page_number):
-        p.setFont("DejaVuSans-Bold", 14)
-        p.drawCentredString(width / 2.0, height - 40, f"{grade} - {unit}")
+        p.setFont("DejaVuSans-Bold", 10)
+        p.drawString(50, height - 40, f"{grade} - {unit}")
         p.setFont("DejaVuSans", 8)
-        p.drawCentredString(width / 2.0, 30, f"QuickSheet v2.0 tarafından üretilmiştir. - Sayfa {page_number}")
+        p.drawRightString(width - 50, height - 40, "QuickSheet v2.0")
+        p.line(50, height - 50, width - 50, height - 50)
+        p.drawCentredString(width / 2.0, 30, f"Sayfa {page_number}")
         
     page_num = 1
     draw_page_content(page_num)
@@ -277,18 +282,15 @@ def create_pdf(content, grade, unit):
     for line in lines:
         line = line.strip()
         
-        # Markdown Başlık ve Kalın Yazı Tespiti
-        font_name = "DejaVuSans"
-        font_size = 10
+        is_heading = False
         if line.startswith('# '):
             font_name = "DejaVuSans-Bold"
-            font_size = 12
+            font_size = 14
             line = line[2:]
-        elif '**' in line:
-            # Basit bold tespiti: **metin**
-            parts = re.split(r'(\*\*.*?\*\*)', line)
+            is_heading = True
         else:
-            parts = [line]
+            font_name = "DejaVuSans"
+            font_size = 10
 
         if y < 60:
             p.showPage()
@@ -296,6 +298,8 @@ def create_pdf(content, grade, unit):
             draw_page_content(page_num)
             y = height - 70
 
+        # Satırları **bold** kısımlarına göre ayır
+        parts = re.split(r'(\*\*.*?\*\*)', line)
         x = 50
         for part in parts:
             if part.startswith('**') and part.endswith('**'):
@@ -307,8 +311,10 @@ def create_pdf(content, grade, unit):
             
             p.drawString(x, y, text_to_draw)
             x += p.stringWidth(text_to_draw, p._fontname, p._fontsize)
-
-        y -= 14
+        
+        y -= 18 # Satır aralığını artır
+        if is_heading:
+            y -= 5 # Başlıktan sonra ekstra boşluk
 
     p.save()
     buffer.seek(0)
@@ -325,7 +331,6 @@ def create_docx(content):
         if line.startswith('# '):
             p = doc.add_paragraph(line[2:], style='Heading 1')
         elif '**' in line:
-            # Basit bold tespiti
             p = doc.add_paragraph()
             parts = re.split(r'(\*\*.*?\*\*)', line)
             for part in parts:
@@ -344,33 +349,46 @@ def create_docx(content):
 # -----------------------------
 # ANA UYGULAMA AKIŞI
 # -----------------------------
-if st.button("✨ Materyali Üret", type="primary", use_container_width=True):
-    st.session_state.last_tool = selected_tool # Store the current tool
+# Adım 1: Prompt'u oluştur ve session state'e kaydet
+if st.button("✨ 1. Adım: Materyal Taslağını Oluştur", type="primary", use_container_width=True):
+    prompt_args = {
+        "grade": selected_grade,
+        "unit": selected_unit,
+        "skill": selected_skill,
+        "clil": include_clil,
+        "reflection": include_reflection,
+    }
+    if selected_tool in ["Çalışma Sayfası", "Ünite Tekrar Testi"]:
+        prompt_args["num_questions"] = num_questions
+    if selected_tool == "Ek Çalışma (Farklılaştırılmış)":
+        prompt_args["diff_type"] = differentiation_type.split(" ")[0]
+
+    st.session_state.final_prompt = create_prompt(selected_tool, **prompt_args)
+    st.session_state.last_tool = selected_tool
+    st.session_state.ai_content = "" 
+
+# Adım 2: Prompt'u göster, düzenleme imkanı sağla ve yapay zekaya gönder
+if 'final_prompt' in st.session_state and st.session_state.final_prompt:
+    st.subheader("2. Adım: Komutu Gözden Geçirin ve Geliştirin (İsteğe Bağlı)")
+    st.info("Aşağıdaki komut (prompt) yapay zekaya gönderilecektir. Daha spesifik sonuçlar için üzerinde değişiklik yapabilirsiniz.")
     
-    with st.spinner(f"{selected_tool} üretiliyor... Lütfen bekleyin, bu işlem 30 saniye kadar sürebilir."):
-        prompt_args = {
-            "grade": selected_grade,
-            "unit": selected_unit,
-            "skill": selected_skill,
-            "clil": include_clil,
-            "reflection": include_reflection,
-        }
-        if selected_tool in ["Çalışma Sayfası", "Ünite Tekrar Testi"]:
-            prompt_args["num_questions"] = num_questions
-        if selected_tool == "Ek Çalışma (Farklılaştırılmış)":
-            prompt_args["diff_type"] = differentiation_type.split(" ")[0]
+    edited_prompt = st.text_area(
+        "Yapay Zeka Komutu (Prompt)",
+        value=st.session_state.final_prompt,
+        height=200,
+        key="prompt_editor"
+    )
 
-        final_prompt = create_prompt(selected_tool, **prompt_args)
-        
-        # Call Gemini and store result in session state
-        st.session_state.ai_content = call_gemini_api(final_prompt)
+    if st.button("🚀 3. Adım: Yapay Zeka ile İçeriği Üret", use_container_width=True):
+         with st.spinner(f"{st.session_state.last_tool} üretiliyor... Bu işlem 30 saniye kadar sürebilir."):
+            st.session_state.ai_content = call_gemini_api(edited_prompt)
+            st.session_state.final_prompt = ""
 
 
-# Eğer üretilmiş içerik varsa, göster ve indirme butonlarını sun
+# Adım 3: Üretilen içeriği göster ve indirme butonlarını sun
 if st.session_state.ai_content:
-    st.subheader(f"Oluşturulan İçerik: {st.session_state.last_tool}")
+    st.subheader(f"Üretilen İçerik: {st.session_state.last_tool}")
     
-    # Text area for editing
     edited_content = st.text_area(
         "İçeriği Düzenleyin (İndirmeden önce değişiklik yapabilirsiniz)",
         value=st.session_state.ai_content,
@@ -378,10 +396,9 @@ if st.session_state.ai_content:
         key="edited_content"
     )
     
-    st.subheader("2. Adım: İndirin")
+    st.subheader("Son Adım: İndirin")
     col1, col2 = st.columns(2)
 
-    # DOCX İndirme
     with col1:
         try:
             docx_buffer = create_docx(edited_content)
@@ -395,7 +412,6 @@ if st.session_state.ai_content:
         except Exception as e:
             st.error(f"Word dosyası oluşturulurken hata: {e}")
 
-    # PDF İndirme
     with col2:
         if font_loaded:
             try:
@@ -419,3 +435,4 @@ if st.session_state.ai_content:
 st.divider()
 st.caption("⚡ **QuickSheet v2.0** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
 st.caption("**Not:** En iyi sonuçlar için spesifik ve net seçimler yapın. Üretilen içeriği indirmeden önce mutlaka kontrol edin ve düzenleyin.")
+
