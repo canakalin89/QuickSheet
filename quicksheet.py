@@ -15,10 +15,11 @@ st.set_page_config(page_title="QuickSheet", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet: MEB İngilizce Öğretmen Asistanı")
 st.markdown("9. Sınıf (B1.1) müfredatına uygun çalışma kağıtları, ders planları, rubricler ve ek aktiviteler üretin.")
 
-# Gemini API anahtarı
-API_KEY = st.secrets.get("GEMINI_API_KEY", st.text_input("Gemini API Anahtarınızı Girin", type="password"))
-if not API_KEY:
-    st.error("Lütfen bir Gemini API anahtarı girin. Ücretsiz anahtar için: https://ai.google.dev")
+# Gemini API anahtarı (secrets’tan alınıyor)
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except KeyError:
+    st.error("Gemini API anahtarı bulunamadı. Lütfen GitHub/Replit secrets’ına GEMINI_API_KEY ekleyin: https://ai.google.dev")
     st.stop()
 
 genai.configure(api_key=API_KEY)
@@ -360,7 +361,7 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
                     st.warning(f"Deneme {attempt+1} başarısız: {api_error}. Yeniden deneniyor...")
                     time.sleep(2)
             else:
-                st.error("Gemini API’den yanıt alınamadı. API anahtarını kontrol edin veya internet bağlantınızı doğrulayın.")
+                st.error("Gemini API’den yanıt alınamadı. Secrets’taki GEMINI_API_KEY’i kontrol edin.")
                 st.stop()
 
             if not ai_content:
@@ -398,10 +399,10 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
             st.success("İçerik başarıyla oluşturuldu! (Gemini ile)")
 
         except Exception as e:
-            st.error(f"Hata oluştu: {e}. API anahtarını veya internet bağlantınızı kontrol edin.")
+            st.error(f"Hata oluştu: {e}. Secrets’taki GEMINI_API_KEY’i kontrol edin.")
 
 # -----------------------------
 # İPUCU VE NOTLAR
 # -----------------------------
-st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6), promptu düzenleyin veya tekrar deneyin. Gemini API ücretsiz tier’da sınırlı istek sunar.")
-st.markdown("**Not**: Bu uygulama Google Gemini API (ücretsiz tier) ile çalışır. MEB 2025 müfredatına uygundur. Anahtar için: https://ai.google.dev")
+st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6) veya promptu düzenleyin. Gemini API ücretsiz tier’da sınırlı istek sunar.")
+st.markdown("**Not**: Bu uygulama Google Gemini API (ücretsiz tier) ile çalışır. MEB 2025 müfredatına uygundur. Secrets’a GEMINI_API_KEY ekleyin: https://ai.google.dev")
