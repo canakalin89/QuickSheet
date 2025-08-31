@@ -33,49 +33,49 @@ try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash")
-except Exception:
-    st.error("Gemini API anahtarı bulunamadı veya geçersiz. Lütfen Streamlit Cloud secrets'a 'GEMINI_API_KEY' ekleyin. Anahtarınızı https://ai.google.dev adresinden alabilirsiniz.")
-    st.stop()
 
 # -----------------------------
-# FONT (PDF için Türkçe karakter desteği)
+# FONT (PDF için Türkçe karakter desteği) - GÜNCELLENDİ
 # -----------------------------
 @st.cache_resource
 def load_font():
-    font_path_regular = "fonts/DejaVuSans.ttf"
-    font_path_bold = "fonts/DejaVuSans-Bold.ttf"
-    try:
-        if not os.path.exists("fonts"):
-            os.makedirs("fonts")
-        
-        # Regular Font
-        if not os.path.exists(font_path_regular):
-            url_regular = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans.ttf"
-            r = requests.get(url_regular, allow_redirects=True, timeout=20)
-            with open(font_path_regular, 'wb') as f:
-                f.write(r.content)
-        
-        # Bold Font
-        if not os.path.exists(font_path_bold):
-            url_bold = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans-Bold.ttf"
-            r = requests.get(url_bold, allow_redirects=True, timeout=20)
-            with open(font_path_bold, 'wb') as f:
-                f.write(r.content)
+    """
+    PDF üretimi için DejaVuSans normal ve kalın fontlarını indirir ve kaydeder.
+    Tekrar indirmeyi önlemek için bu kaynak önbelleğe alınır.
+    """
+    font_dir = "fonts"
+    if not os.path.exists(font_dir):
+        os.makedirs(font_dir)
 
-        pdfmetrics.registerFont(TTFont("DejaVuSans", font_path_regular))
-        pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_path_bold))
+    # İndirilecek font dosyaları ve URL'leri
+    font_files = {
+        "DejaVuSans": "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans.ttf",
+        "DejaVuSans-Bold": "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans-Bold.ttf"
+    }
+
+    try:
+        for name, url in font_files.items():
+            font_path = os.path.join(font_dir, f"{name}.ttf")
+            # Eğer font dosyası mevcut değilse indir
+            if not os.path.exists(font_path):
+                response = requests.get(url, timeout=20)
+                response.raise_for_status()  # İndirme başarısız olursa (404 vb.) hata verir.
+                with open(font_path, "wb") as f:
+                    f.write(response.content)
+            # Fontu reportlab kütüphanesine kaydet
+            pdfmetrics.registerFont(TTFont(name, font_path))
         return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Font indirilirken bir ağ hatası oluştu: {e}. Lütfen internet bağlantınızı kontrol edin.")
+        return False
     except Exception as e:
-        st.error(f"Font yüklenirken bir hata oluştu: {e}. Lütfen internet bağlantınızı kontrol edin veya 'fonts' klasörünü manuel olarak oluşturun.")
+        st.error(f"Font yüklenirken bir hata oluştu: {e}. İndirilen dosya bozuk olabilir veya GitHub erişim sorunu yaşanıyor.")
         return False
 
 font_loaded = load_font()
 
 # -----------------------------
-# MÜFREDAT BİLGİSİ (MEB 2025 - 9. SINIF)
-# -----------------------------
-meb_curriculum = {
-    "9. Sınıf": {
+# MÜFREDAT (MEB 2025 9. SINIF, 8 TEMA)
         "Theme 1: School Life": {
             "Grammar": "Simple Present (to be), Modal 'can' (possibility/ability), Simple Past (was/were).",
             "Vocabulary": "Countries, nationalities, languages, capitals, tourist attractions, school rules.",
@@ -435,4 +435,5 @@ if st.session_state.ai_content:
 st.divider()
 st.caption("⚡ **QuickSheet v2.0** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
 st.caption("**Not:** En iyi sonuçlar için spesifik ve net seçimler yapın. Üretilen içeriği indirmeden önce mutlaka kontrol edin ve düzenleyin.")
+
 
