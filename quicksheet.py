@@ -15,8 +15,12 @@ st.set_page_config(page_title="QuickSheet", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet: MEB İngilizce Öğretmen Asistanı")
 st.markdown("9. Sınıf (B1.1) müfredatına uygun çalışma kağıtları, ders planları, rubricler ve ek aktiviteler üretin.")
 
-# Hugging Face modelini başlat (DistilGPT-2, hafif ve bulut dostu)
-generator = pipeline("text-generation", model="distilgpt2")
+# Hugging Face modelini başlat (Mistral-7B-Instruct-v0.2)
+try:
+    generator = pipeline("text-generation", model="mistralai/Mixtral-7B-Instruct-v0.2", device=-1)  # CPU için
+except Exception as e:
+    st.error(f"Model yüklenemedi: {e}. Hugging Face Spaces’te yeterli kaynak olduğundan emin olun.")
+    st.stop()
 
 # -----------------------------
 # FONT (Türkçe karakter desteği)
@@ -130,7 +134,7 @@ with st.sidebar:
     include_reflection = st.checkbox("Yansıtma Aktivitesi Ekle (ör. öz değerlendirme)")
     
     if selected_tool in ["Çalışma Sayfası", "Ek Çalışma"]:
-        num_questions = st.slider("Soru Sayısı", 1, 10, 6)  # DistilGPT-2 için daha az soru
+        num_questions = st.slider("Soru Sayısı", 1, 8, 6)  # Mistral-7B için optimize
     
     if selected_tool == "Ek Çalışma":
         differentiation_type = st.radio("Çalışma Türü", ["Destekleyici", "İleri"])
@@ -141,15 +145,14 @@ with st.sidebar:
 def generate_ai_worksheet_prompt(grade, unit, skill, num_questions):
     topic_info = meb_curriculum[grade][unit].get(skill, "")
     prompt = f"""
-You are an expert English teacher creating materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+[INST] You are an expert English teacher creating materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 Requirements:
 - Unit: "{unit}"
 - Focus skill: "{skill}"
 - Number of questions: exactly {num_questions}
-- Question types: mix of multiple choice, fill-in-the-blanks, true/false. For 'Reading', include a short original text followed by questions. For 'Speaking', include role-play or discussion prompts. For 'Writing', include short writing tasks (e.g., 50-100 words). For 'Pronunciation', include drills for specific sounds listed in the curriculum.
+- Question types: mix of multiple choice, fill-in-the-blanks, true/false. For 'Reading', include a short original text (100-150 words) followed by questions. For 'Speaking', include role-play or discussion prompts. For 'Writing', include short writing tasks (50-100 words). For 'Pronunciation', include drills for specific sounds listed in the curriculum.
 - Start with a clear activity title and a one-sentence instruction for students.
 - End with an "Answer Key" section listing only correct answers (no explanations).
-- Keep output concise (under 500 tokens) to fit lightweight model capabilities.
 - Ensure content aligns with the MEB 2025 English curriculum (Waymark series).
 Topics to cover: {topic_info}
 """
@@ -157,13 +160,14 @@ Topics to cover: {topic_info}
         prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection question for students to evaluate their learning process."
+    prompt += "\n[/INST]"
     return prompt.strip()
 
 def generate_lesson_plan_prompt(grade, unit):
     unit_data = meb_curriculum[grade][unit]
     topic_info = " | ".join([f"{k}: {v}" for k, v in unit_data.items()])
     prompt = f"""
-You are an English curriculum expert creating a lesson plan for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+[INST] You are an English curriculum expert creating a lesson plan for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 Unit: "{unit}"
 Include:
 - Title
@@ -174,7 +178,6 @@ Include:
   * Wrap-Up / Consolidation (quick review or check, 5-10 min)
 - Key vocabulary, grammar, and pronunciation list
 - Materials (simple list, e.g., worksheets, whiteboard)
-- Keep output concise (under 500 tokens) for lightweight model.
 - Align with the MEB 2025 English curriculum (Waymark series).
 Key topics: {topic_info}
 """
@@ -182,21 +185,23 @@ Key topics: {topic_info}
         prompt += "\n- Include a CLIL activity related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection activity for students to evaluate their learning process."
+    prompt += "\n[/INST]"
     return prompt.strip()
 
 def generate_rubric_prompt(grade, unit, skill):
-    return f"""
-You are an EFL assessment specialist creating a grading rubric for {skill} in {grade} (CEFR B1.1, MEB 2025 Curriculum).
+    prompt = f"""
+[INST] You are an EFL assessment specialist creating a grading rubric for {skill} in {grade} (CEFR B1.1, MEB 2025 Curriculum).
 Unit: "{unit}"
 Include:
 - At least 3 criteria relevant to {skill} (e.g., accuracy, fluency, content for Writing).
 - 3 performance levels: Excellent, Good, Needs Improvement.
 - Clear, concise descriptors for each level under each criterion.
 - Use headings and bullet points (no tables).
-- Keep output concise (under 300 tokens) for lightweight model.
 - Align with the MEB 2025 English curriculum (Waymark series).
 Topics: {meb_curriculum[grade][unit].get(skill, "")}
-""".strip()
+[/INST]
+"""
+    return prompt.strip()
 
 def generate_differentiation_prompt(grade, unit, skill, diff_type):
     topic_info = meb_curriculum[grade][unit].get(skill, "")
@@ -208,7 +213,7 @@ def generate_differentiation_prompt(grade, unit, skill, diff_type):
         detail = "Require higher-order thinking (e.g., short opinion writing, problem-solving, mini project, debate prompts)."
     
     prompt = f"""
-You are an expert English teacher creating differentiated materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
+[INST] You are an expert English teacher creating differentiated materials for a {grade} class (CEFR B1.1, MEB 2025 Curriculum).
 {intro}
 Unit: "{unit}"
 Focus: "{skill}"
@@ -216,7 +221,6 @@ Instructions:
 - Activity: Provide a clear, classroom-ready task. {detail}
 - Objective: State the learning goal for this group.
 - Implementation: Step-by-step how the teacher runs it (timings optional).
-- Keep output concise (under 300 tokens) for lightweight model.
 - Align with the MEB 2025 English curriculum (Waymark series).
 Topics: {topic_info}
 """
@@ -224,6 +228,7 @@ Topics: {topic_info}
         prompt += "\n- Include a CLIL component related to cybersecurity, digital technology, or interdisciplinary topics."
     if include_reflection:
         prompt += "\n- Include a reflection question for students to evaluate their learning."
+    prompt += "\n[/INST]"
     return prompt.strip()
 
 # -----------------------------
@@ -319,7 +324,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False, gra
 # ANA AKIŞ
 # -----------------------------
 if st.button("✨ İçeriği Üret", key="generate_content"):
-    with st.spinner(f"{selected_tool} oluşturuluyor... (Hugging Face ile)"):
+    with st.spinner(f"{selected_tool} oluşturuluyor... (Hugging Face Spaces ile)"):
         try:
             if selected_tool == "Çalışma Sayfası":
                 prompt_text = generate_ai_worksheet_prompt(
@@ -341,24 +346,25 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
                 st.error("Geçersiz üretim modu seçimi.")
                 st.stop()
 
-            # Hugging Face modeliyle içerik üret
+            # Mistral-7B ile içerik üret
             for attempt in range(3):  # 3 deneme
                 try:
                     response = generator(
                         prompt_text,
-                        max_length=500,  # DistilGPT-2 için uygun
+                        max_length=1000,  # Mistral-7B için uygun
                         num_return_sequences=1,
                         truncation=True,
-                        pad_token_id=generator.tokenizer.eos_token_id
+                        pad_token_id=generator.tokenizer.eos_token_id,
+                        temperature=0.7
                     )
-                    ai_content = response[0]["generated_text"].strip()
+                    ai_content = response[0]["generated_text"].replace(prompt_text, "").strip()  # Promptu çıkar
                     if ai_content:
                         break
                 except Exception as model_error:
                     st.warning(f"Deneme {attempt+1} başarısız: {model_error}. Yeniden deneniyor...")
-                    time.sleep(1)
+                    time.sleep(2)
             else:
-                st.error("Modelden yanıt alınamadı. Daha az soru seçin veya tekrar deneyin.")
+                st.error("Modelden yanıt alınamadı. Soru sayısını azaltın (örn. 4) veya Spaces kaynaklarını kontrol edin.")
                 st.stop()
 
             if not ai_content:
@@ -393,13 +399,13 @@ if st.button("✨ İçeriği Üret", key="generate_content"):
                 with open(pdf_path, "rb") as f:
                     st.download_button("📄 PDF Olarak İndir", f, file_name=out_name, key="single_pdf")
 
-            st.success("İçerik başarıyla oluşturuldu! (Hugging Face ile)")
+            st.success("İçerik başarıyla oluşturuldu! (Hugging Face Spaces ile)")
 
         except Exception as e:
-            st.error(f"Hata oluştu: {e}. Daha az soru seçin veya internet bağlantınızı kontrol edin.")
+            st.error(f"Hata oluştu: {e}. Soru sayısını azaltın veya Spaces kaynaklarını kontrol edin.")
 
 # -----------------------------
 # İPUCU VE NOTLAR
 # -----------------------------
-st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 6), promptu düzenleyin veya tekrar deneyin. DistilGPT-2 hafif bir modeldir, daha güçlü model için premium bulut planı gerekebilir.")
-st.markdown("**Not**: Bu uygulama Hugging Face Transformers (MIT lisansı) ile çalışır. MEB 2025 müfredatına uygundur.")
+st.caption("**İpucu**: İçerik zayıfsa soru sayısını azaltın (örn. 4-6), promptu düzenleyin veya tekrar deneyin. Mistral-7B güçlüdür ama Spaces’in ücretsiz tier’ında kaynak sınırlıdır.")
+st.markdown("**Not**: Bu uygulama Hugging Face Spaces ve Mistral-7B (Apache 2.0 lisansı) ile çalışır. MEB 2025 müfredatına uygundur.")
