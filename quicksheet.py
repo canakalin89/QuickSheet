@@ -17,8 +17,8 @@ import random
 # SAYFA YAPISI VE BAŞLANGIÇ AYARLARI
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v2.1", page_icon="⚡", layout="wide")
-st.title("⚡ QuickSheet v2.1: Akıllı MEB İngilizce Asistanı")
-st.markdown("9. Sınıf (B1.1) 'Century of Türkiye' (Maarif Modeli) müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
+st.title("⚡ QuickSheet v2.1: 9. Sınıf İngilizce Öğretmeni Asistanı")
+st.markdown("9. Sınıf (B1.1) 'Türkiye Yüzyılı Maarif Modeli' müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
@@ -449,6 +449,5 @@ if st.session_state.ai_content:
 
 st.divider()
 st.caption("⚡ **QuickSheet v2.1** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
-st.caption("Geliştirici: Can AKALIN | İletişim: canakalin59@gmail.com | Instagram: @can_akalin")
-
+st.caption("Geliştirici: Can AKALIN | İletişim: canakalin59@gmail.com | Instagram: [@can_akalin](https://instagram.com/can_akalin)")
 
