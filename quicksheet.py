@@ -11,6 +11,7 @@ import time
 import google.generativeai as genai
 import io
 import re
+import random # Çeşitlilik için eklendi
 
 # -----------------------------
 # SAYFA YAPISI VE BAŞLANGIÇ AYARLARI
@@ -183,24 +184,72 @@ with st.sidebar:
             differentiation_type = st.radio("Aktivite Düzeyi", ["Destekleyici (Supporting)", "İleri Düzey (Expansion)"])
 
 # -----------------------------
-# PROMPT OLUŞTURMA FONKSİYONLARI
+# PROMPT OLUŞTURMA FONKSİYONLARI - GÜNCELLENDİ
 # -----------------------------
+def get_activity_suggestions(skill):
+    """Belirli bir beceri için çeşitli aktivite türleri önerir."""
+    suggestions = {
+        "Grammar": [
+            "a sentence transformation task (e.g., affirmative to negative)",
+            "a correct-the-mistake exercise",
+            "a multiple-choice question set focusing on common errors",
+            "a fill-in-the-blanks exercise for verb forms",
+            "a sentence building task from jumbled words"
+        ],
+        "Vocabulary": [
+            "a matching exercise (word to definition or picture)",
+            "a fill-in-the-blanks story using a word bank",
+            "an odd-one-out task where students find the word that doesn't belong",
+            "a sentence creation task for 3 key words",
+            "an unscramble the letters activity for key vocabulary"
+        ],
+        "Reading": [
+            "a short original text (100-150 words) with True/False and comprehension questions",
+            "a text with headings where students match paragraphs to headings",
+            "a text with gaps where students choose the best sentence to fill each gap"
+        ],
+        "Speaking": [
+            "a role-play scenario with specific roles and goals",
+            "a set of discussion questions for pair work",
+            "a picture description task"
+        ],
+        "Writing": [
+            "a guided paragraph writing task with prompts",
+            "an email or message writing task based on a scenario",
+            "a picture-based short story prompt"
+        ],
+        "Pronunciation": [
+            "a minimal pairs discrimination exercise (e.g., ship vs. sheep)",
+            "a tongue twister focusing on the target sounds",
+            "a 'find the sound' activity in a short text"
+        ]
+    }
+    return random.sample(suggestions.get(skill, []), 2) # Rastgele 2 öneri seçer
+
 def create_prompt(tool, **kwargs):
     base_prompt = f"""
 Act as an expert English teacher and material developer for the Turkish Ministry of Education's new 'Century of Türkiye' model.
 Your task is to create a high-quality, practical, and engaging material for a {kwargs.get('grade')} class (CEFR B1.1), fully aligned with the WAYMARK series.
-The content must be entirely in English, unless specified.
+The content must be entirely in English, including instructions for students.
 Unit: "{kwargs.get('unit')}"
 """
     
+    # Aktivite çeşitliliği için öneri oluşturma
+    activity_suggestion_text = ""
+    if kwargs.get('skill') in ['Grammar', 'Vocabulary', 'Reading', 'Speaking', 'Writing', 'Pronunciation']:
+        suggestions = get_activity_suggestions(kwargs.get('skill'))
+        if suggestions:
+            activity_suggestion_text = f"Please include a creative and diverse mix of activity types. For inspiration, you can use some of the following formats: {', '.join(suggestions)}."
+
     prompts = {
         "Çalışma Sayfası": f"""
         Focus Skill: "{kwargs.get('skill')}"
         Topic: "{meb_curriculum[kwargs.get('grade')][kwargs.get('unit')].get(kwargs.get('skill'), '')}"
         
         Create a worksheet with exactly {kwargs.get('num_questions')} questions.
-        - Mix question types: multiple choice, fill-in-the-blanks, matching, true/false.
+        {activity_suggestion_text}
         - Start with a clear title (e.g., 'Theme 1: Grammar Worksheet') and a one-sentence instruction for students.
+        - Ensure variety in tasks. Avoid using only one type of question.
         - End with a separate 'Answer Key' section listing only the correct answers.
         """,
         "Ders Planı": f"""
@@ -218,7 +267,7 @@ Unit: "{kwargs.get('unit')}"
         "Ünite Tekrar Testi": f"""
         Create a cumulative unit review test with {kwargs.get('num_questions')} questions.
         - The test must cover at least 3 different skills from the unit (e.g., Grammar, Vocabulary, Reading).
-        - Include a variety of question formats.
+        - Include a variety of question formats as suggested for worksheets.
         - End with a separate 'Answer Key' section.
         """,
         "Değerlendirme Rubriği": f"""
@@ -258,7 +307,7 @@ def call_gemini_api(_prompt_text):
             _prompt_text,
             generation_config={
                 "max_output_tokens": 2048,
-                "temperature": 0.7
+                "temperature": 0.75 # Yaratıcılığı artırmak için sıcaklık biraz yükseltildi
             }
         )
         return response.text.strip()
@@ -290,14 +339,17 @@ def create_pdf(content, grade, unit):
         line = line.strip()
         
         is_heading = False
+        font_name = "DejaVuSans"
+        font_size = 10
+
         if line.startswith('# '):
             font_name = "DejaVuSans-Bold"
             font_size = 14
             line = line[2:]
             is_heading = True
-        else:
-            font_name = "DejaVuSans"
-            font_size = 10
+        elif line.startswith('**') and line.endswith('**'):
+             font_name = "DejaVuSans-Bold"
+             line = line[2:-2]
 
         if y < 60:
             p.showPage()
@@ -305,19 +357,8 @@ def create_pdf(content, grade, unit):
             draw_page_content(page_num)
             y = height - 70
 
-        # Satırları **bold** kısımlarına göre ayır
-        parts = re.split(r'(\*\*.*?\*\*)', line)
-        x = 50
-        for part in parts:
-            if part.startswith('**') and part.endswith('**'):
-                p.setFont("DejaVuSans-Bold", font_size)
-                text_to_draw = part[2:-2]
-            else:
-                p.setFont(font_name, font_size)
-                text_to_draw = part
-            
-            p.drawString(x, y, text_to_draw)
-            x += p.stringWidth(text_to_draw, p._fontname, p._fontsize)
+        p.setFont(font_name, font_size)
+        p.drawString(50, y, line)
         
         y -= 18 # Satır aralığını artır
         if is_heading:
@@ -442,6 +483,4 @@ if st.session_state.ai_content:
 st.divider()
 st.caption("⚡ **QuickSheet v2.0** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
 st.caption("**Not:** En iyi sonuçlar için spesifik ve net seçimler yapın. Üretilen içeriği indirmeden önce mutlaka kontrol edin ve düzenleyin.")
-
-
 
