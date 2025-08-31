@@ -18,7 +18,7 @@ import random
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v2.1", page_icon="⚡", layout="wide")
 st.title("⚡ QuickSheet v2.1: Akıllı MEB İngilizce Asistanı")
-st.markdown("9. Sınıf (B1.1) 'Türkiye Yüzyılı' (Maarif Modeli) müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
+st.markdown("9. Sınıf (B1.1) 'Türkiye Yüzyılı Maarif Modeli' müfredatına uygun, **çeşitli ve odaklı** materyaller üretin.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
@@ -228,13 +228,14 @@ Unit: "{kwargs.get('unit')}"
         """,
         "Dinleme Aktivitesi Senaryosu": f"""
         Create a listening activity.
+        - **Crucial Instruction for AI:** The audio script MUST be completely original and unique for each generation. Do NOT under any circumstances repeat scripts you have generated before. For example, AVOID generating texts similar to 'School life here in the UK is amazing...'. Create a new story every time.
         - Write a short, natural-sounding audio script (dialogue or monologue, 100-150 words) suitable for B1.1 level. The script must include vocabulary and grammar from the unit.
         - After the script, create 5 comprehension questions (e.g., multiple choice, True/False).
         - End with a separate 'Audio Script' section and an 'Answer Key' section.
         """,
         "Ünite Tekrar Testi": f"""
         Create a cumulative unit review test with {kwargs.get('num_questions')} questions.
-        - The test must cover topics from the entire unit, but with a primary focus on the selected skill: {kwargs.get('skill')} and topics: {kwargs.get('topics')}.
+        - The test must cover topics from the entire unit, but with a primary focus on the selected skill: {kwargs.get('skill')} and topics: {', '.join(kwargs.get('topics', []))}.
         - Include a variety of question formats.
         - End with a separate 'Answer Key' section.
         """,
@@ -268,14 +269,15 @@ Unit: "{kwargs.get('unit')}"
     return final_prompt.strip()
 
 # -----------------------------
-# GEMINI API ÇAĞRISI
+# GEMINI API ÇAĞRISI (YARATICILIK ARTIRILDI)
 # -----------------------------
 @st.cache_data
 def call_gemini_api(_prompt_text):
     try:
+        # Yaratıcılık için sıcaklık değeri artırıldı
         response = model.generate_content(
             _prompt_text,
-            generation_config={"max_output_tokens": 2048, "temperature": 0.8}
+            generation_config={"max_output_tokens": 2048, "temperature": 0.9}
         )
         return response.text.strip()
     except Exception as e:
@@ -324,8 +326,25 @@ def create_pdf(content, grade, unit):
             draw_page_content(page_num)
             y = height - 70
 
-        p.setFont(font_name, font_size)
-        p.drawString(50, y, line)
+        # Word wrapping for long lines
+        if p.stringWidth(line, font_name, font_size) > (width - 100):
+            words = line.split()
+            current_line = ""
+            for word in words:
+                if p.stringWidth(current_line + word, font_name, font_size) < (width - 100):
+                    current_line += word + " "
+                else:
+                    p.setFont(font_name, font_size)
+                    p.drawString(50, y, current_line)
+                    y -= 18
+                    if y < 60:
+                        p.showPage(); page_num += 1; draw_page_content(page_num); y = height - 70
+                    current_line = word + " "
+            p.setFont(font_name, font_size)
+            p.drawString(50, y, current_line)
+        else:
+            p.setFont(font_name, font_size)
+            p.drawString(50, y, line)
         
         y -= 18
         if is_heading:
