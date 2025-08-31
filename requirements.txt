@@ -1,5 +1,4 @@
-streamlit
-google-generativeai
-fpdf2
-requests
-reportlab
+streamlit==1.39.0
+g4f[all]
+reportlab==4.2.2
+requests==2.32.3
