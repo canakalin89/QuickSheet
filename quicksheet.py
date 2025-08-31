@@ -28,14 +28,18 @@ if 'final_prompt' not in st.session_state:
     st.session_state.final_prompt = ""
 
 
-# Gemini API anahtarı (streamlit secrets'tan alınıyor)
+# Gemini API anahtarı (streamlit secrets'tan alınıyor) - HATA DÜZELTİLDİ
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash")
+except (KeyError, AttributeError):
+    st.error("Gemini API anahtarı bulunamadı veya geçersiz. Lütfen Streamlit Cloud secrets'a 'GEMINI_API_KEY' ekleyin. Anahtarınızı https://ai.google.dev adresinden alabilirsiniz.")
+    st.stop()
+
 
 # -----------------------------
-# FONT (PDF için Türkçe karakter desteği) - GÜNCELLENDİ
+# FONT (PDF için Türkçe karakter desteği)
 # -----------------------------
 @st.cache_resource
 def load_font():
@@ -75,7 +79,10 @@ def load_font():
 font_loaded = load_font()
 
 # -----------------------------
-# MÜFREDAT (MEB 2025 9. SINIF, 8 TEMA)
+# MÜFREDAT BİLGİSİ (MEB 2025 - 9. SINIF)
+# -----------------------------
+meb_curriculum = {
+    "9. Sınıf": {
         "Theme 1: School Life": {
             "Grammar": "Simple Present (to be), Modal 'can' (possibility/ability), Simple Past (was/were).",
             "Vocabulary": "Countries, nationalities, languages, capitals, tourist attractions, school rules.",
@@ -435,5 +442,6 @@ if st.session_state.ai_content:
 st.divider()
 st.caption("⚡ **QuickSheet v2.0** | Google Gemini API ile güçlendirilmiştir. | MEB 'Yüzyılın Türkiye'si Eğitim Modeli' (2025) 9. Sınıf İngilizce müfredatına uygundur.")
 st.caption("**Not:** En iyi sonuçlar için spesifik ve net seçimler yapın. Üretilen içeriği indirmeden önce mutlaka kontrol edin ve düzenleyin.")
+
 
 
