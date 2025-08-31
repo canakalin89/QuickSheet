@@ -8,6 +8,7 @@ import tempfile
 import os
 import base64
 import requests
+import time
 
 # --- API ve Ayarlar ---
 # ÖNEMLİ: Kendi Gemini API anahtarınızı buraya ekleyin
@@ -184,7 +185,7 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
     pdf.setTitle("English Worksheet - Grade 9")
     pdf.setAuthor("QuickSheet AI Assistant")
     pdf.setCreator("QuickSheet AI Assistant")
-    
+
     pdf.setFont("DejaVuSans", 10)
     
     lines = content.split('\n')
@@ -202,9 +203,9 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
             is_answer_key_section = True
             if is_teacher_copy:
                 pdf.showPage()
-                y_position = 750
-                pdf.setFont("DejaVuSans-Bold", 12)
-                pdf.drawString(50, y_position, "Answer Key")
+                y_position = 780
+                pdf.setFont("DejaVuSans-Bold", 14)
+                pdf.drawCentredString(A4[0] / 2.0, y_position, "Answer Key")
                 y_position -= 20
                 pdf.setFont("DejaVuSans", 10)
             else:
