@@ -65,7 +65,7 @@ def load_font():
 font_loaded = load_font()
 
 # -----------------------------
-# MÜFREDAT BİLGİSİ (KONU SEÇİMİ İÇİN GÜNCELLENDİ)
+# MÜFREDAT BİLGİSİ (TÜM TEMALAR EKLENDİ VE DETAYLANDIRILDI)
 # -----------------------------
 meb_curriculum = {
     "9. Sınıf": {
@@ -93,7 +93,46 @@ meb_curriculum = {
             "Writing": ["A Short Description of a Family Member"],
             "Pronunciation": ["Vowels (/iː/, /ɪ/, /aɪ/)", "Consonants (/ʒ/, /k/, /l/)"]
         },
-        # Diğer üniteler de benzer şekilde listeye çevrilebilir
+        "Theme 4: Family Life": {
+            "Grammar": ["Simple Present (jobs and work routines)", "Prepositions of place (in/on/at for workplaces)"],
+            "Vocabulary": ["Family members", "Jobs and Occupations", "Workplaces", "Work Activities"],
+            "Reading": ["Texts about different family members' jobs", "Daily routines of professionals"],
+            "Speaking": ["Talking about family members' occupations", "Asking about jobs"],
+            "Writing": ["A paragraph about a family member's job"],
+            "Pronunciation": ["Vowels (/ɒ/, /ɔː/)", "Consonants (/m/, /n/, /p/)"]
+        },
+        "Theme 5: House & Neighbourhood": {
+            "Grammar": ["Present Continuous", "There is/are", "Possessive adjectives"],
+            "Vocabulary": ["Types of houses", "Rooms", "Furniture", "Household chores"],
+            "Reading": ["Descriptions of houses or neighborhoods"],
+            "Speaking": ["Describing your own house", "Describing a picture of a room"],
+            "Writing": ["A short text about your dream house"],
+            "Pronunciation": ["Consonants (/q/ as in quick, /r/, /s/, /ʃ/ as in shower)"]
+        },
+        "Theme 6: City & Country": {
+            "Grammar": ["Present Simple vs. Present Continuous", "Wh- questions", "'or' for options"],
+            "Vocabulary": ["Food culture", "Food festivals", "Ingredients", "Local and international dishes"],
+            "Reading": ["Texts about food festivals or traditional cuisines"],
+            "Speaking": ["Role-playing at a food festival", "Asking for options"],
+            "Writing": ["A blog post about a food festival you attended"],
+            "Pronunciation": ["Vowels (/uː/, /ʊ/)", "Consonants (/t/, /ð/, /θ/, /v/)"]
+        },
+        "Theme 7: World & Nature": {
+            "Grammar": ["Simple Past (was/were, there was/were)", "Modal 'should' (advice)"],
+            "Vocabulary": ["Endangered animals", "Habitats", "Environmental problems (habitat loss, pollution)"],
+            "Reading": ["Texts about endangered species and conservation efforts"],
+            "Speaking": ["Giving advice on how to protect nature", "Discussing environmental problems"],
+            "Writing": ["A short paragraph about an endangered animal"],
+            "Pronunciation": ["Diphthongs (/eə/ as in bear, /ɪə/ as in deer)", "Consonants (/w/, /ks/)"]
+        },
+        "Theme 8: Universe & Future": {
+            "Grammar": ["Future Simple (will) for predictions and beliefs", "Simple Present for describing films"],
+            "Vocabulary": ["Films and film genres", "Futuristic ideas (robots, space exploration)", "Technology"],
+            "Reading": ["Film reviews", "Short texts about future technology"],
+            "Speaking": ["Making predictions about the future", "Talking about favorite films"],
+            "Writing": ["A short futuristic story", "A review of a sci-fi film"],
+            "Pronunciation": ["Diphthong (/əʊ/ as in show)", "Consonants (/j/ as in year, /z/)"]
+        }
     }
 }
 
@@ -147,6 +186,7 @@ with st.sidebar:
 # PROMPT OLUŞTURMA FONKSİYONLARI (ÇEŞİTLİLİK VE ODAKLANMA İÇİN GÜNCELLENDİ)
 # -----------------------------
 def get_activity_suggestions(skill):
+    """Belirli bir beceri için çeşitli aktivite türleri önerir."""
     suggestions = {
         "Grammar": ["a sentence transformation task", "a correct-the-mistake exercise", "a sentence building task from jumbled words"],
         "Vocabulary": ["a matching exercise (word to definition)", "a fill-in-the-blanks story using a word bank", "an odd-one-out task"],
@@ -180,7 +220,6 @@ Unit: "{kwargs.get('unit')}"
         - Start with a clear title and a one-sentence instruction for students.
         - End with a separate 'Answer Key' section.
         """,
-        # ... (Diğer prompt'lar aynı kalabilir veya benzer şekilde güncellenebilir) ...
         "Ders Planı": f"""
         Create a 40-minute lesson plan.
         - Include: Objective, Key Language (Vocab & Grammar), Materials.
@@ -195,7 +234,7 @@ Unit: "{kwargs.get('unit')}"
         """,
         "Ünite Tekrar Testi": f"""
         Create a cumulative unit review test with {kwargs.get('num_questions')} questions.
-        - The test must cover topics from the entire unit.
+        - The test must cover topics from the entire unit, but with a primary focus on the selected skill: {kwargs.get('skill')} and topics: {kwargs.get('topics')}.
         - Include a variety of question formats.
         - End with a separate 'Answer Key' section.
         """,
@@ -325,6 +364,11 @@ def create_docx(content):
 # ANA UYGULAMA AKIŞI
 # -----------------------------
 if st.button("✨ 1. Adım: Materyal Taslağını Oluştur", type="primary", use_container_width=True):
+    # Kullanıcı konu seçmediyse hata göster
+    if skill_needed and not selected_topics:
+        st.warning("Lütfen en az bir alt konu seçin.")
+        st.stop()
+
     prompt_args = {
         "grade": selected_grade,
         "unit": selected_unit,
