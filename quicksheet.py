@@ -7,6 +7,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 import os
 import base64
+import re
+import requests
 
 # --- API ve Ayarlar ---
 # ÖNEMLİ: Kendi Gemini API anahtarınızı buraya ekleyin
@@ -17,15 +19,15 @@ genai.configure(api_key="AIzaSyBSaZUaZPNMbqRyVp1uxOfibUh6y19ww5U")
 try:
     if not os.path.exists("fonts"):
         os.makedirs("fonts")
-    if not os.path.exists("fonts/DejaVuSans.ttf"):
-        import requests
+    font_path = "fonts/DejaVuSans.ttf"
+    if not os.path.exists(font_path):
         url = "https://github.com/googlefonts/dejavu-fonts/raw/main/ttf/DejaVuSans.ttf"
         r = requests.get(url, allow_redirects=True)
-        open('fonts/DejaVuSans.ttf', 'wb').write(r.content)
+        with open(font_path, 'wb') as f:
+            f.write(r.content)
     
-    pdfmetrics.registerFont(TTFont("DejaVuSans", "fonts/DejaVuSans.ttf"))
-    if not os.path.exists("fonts/DejaVuSans.ttf"):
-        st.warning("`DejaVuSans.ttf` font dosyası indirilemedi. Lütfen manuel olarak `fonts` klasörüne ekleyin.")
+    pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
+    pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_path))
 except Exception as e:
     st.error(f"Font yüklenirken hata oluştu: {e}")
 
@@ -226,8 +228,8 @@ def create_pdf(content, filename, is_teacher_copy=False, is_worksheet=False):
 
 # --- Uygulama Mantığı ---
 if st.button("✨ İçeriği Üret"):
-    if not os.getenv("GEMINI_API_KEY"):
-        st.error("Lütfen GEMINI_API_KEY ortam değişkenini ayarlayın veya kodun içine anahtarınızı ekleyin.")
+    if not os.getenv("GEMINI_API_KEY") and "YOUR_GEMINI_API_KEY" in os.getenv("GEMINI_API_KEY"):
+        st.error("Lütfen Gemini API anahtarınızı kodun içine ekleyin.")
     else:
         with st.spinner(f"{selected_tool} oluşturuluyor... Bu biraz zaman alabilir."):
             try:
