@@ -21,7 +21,7 @@ from datetime import date
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v1.7: 9. Sınıf Asistanı", page_icon="⚡", layout="wide")
 st.title("⚡ Quicksheet v1.7: 9. Sınıf İngilizce Öğretmeni Asistanı")
-st.markdown("Türkiye Yüzyılı Maarif Modeli'ne uygun, **çok dilli ve düzenli formatta** materyaller üretin.")
+st.markdown("Türkiye Yüzyılı Maarif Modeli'ne uygun, **bütünleşik ve pedagojik** materyaller üretin.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
@@ -68,7 +68,7 @@ def load_font():
 font_loaded = load_font()
 
 # -----------------------------
-# MÜFREDAT BİLGİSİ (READING, WRITING, SPEAKING DETAYLANDIRILDI)
+# MÜFREDAT BİLGİSİ
 # -----------------------------
 meb_curriculum = {
     "9. Sınıf": {
@@ -76,7 +76,7 @@ meb_curriculum = {
             "Grammar": ["Simple Present (to be)", "Modal 'can' (possibility/ability)", "Simple Past (was/were)"],
             "Vocabulary": ["Countries and Nationalities", "Languages and Capitals", "Tourist Attractions", "School Rules"],
             "Reading": ["A Student's First Day at School (Blog Post)", "School Club Descriptions", "An E-mail from an Exchange Student", "A Dialogue about School Rules", "A Short Text about a Famous Landmark", "A Country Profile (Fact File)", "Travel Forum Posts", "A Quiz about World Capitals", "An Interview with a Foreign Student", "A School Trip Itinerary"],
-            "Speaking": ["Introducing Yourself (Role-Play)", "Describing Your Country to a Tourist", "Asking for and Giving Directions in School", "Planning a School Trip with a Partner", "Discussing School Rules", "A Short Presentation about a Famous Landmark", "Comparing Two Schools (Your School vs. a Fictional School)", "Role-Play: Meeting a New Exchange Student", "A Mini-Debate: School Uniforms Yes or No?", "Giving a Short 'Welcome to Our School' Speech"],
+            "Speaking": ["Introducing Yourself (Role-Play)", "Describing Your Country to a Tourist", "Asking for and Giving Directions in School", "Planning a School Trip with a Partner", "Discussing School Rules", "A Short Presentation about a Famous Landmark", "Comparing Two Schools", "Role-Play: Meeting a New Exchange Student", "A Mini-Debate: School Uniforms Yes or No?", "Giving a Short 'Welcome to Our School' Speech"],
             "Writing": ["Writing a Welcome E-mail to a New Student", "Paragraph Describing a Dream Holiday Destination", "Writing a Postcard from Abroad", "Creating a School Club Poster", "A Short Blog Post about Your School", "A 'Top 5' List of Places to Visit in Your City", "A Short Dialogue between Two New Students", "Answering Questions about Your Country", "Writing a Short Quiz about Nationalities", "Planning a Weekend Trip for a Visitor"],
             "Pronunciation": ["Long and short vowels (/æ/, /ɑː/, /eɪ/)", "Consonants (/b/, /k/, /d/)"]
         },
@@ -84,7 +84,7 @@ meb_curriculum = {
             "Grammar": ["Simple Present (routines)", "Adverbs of Frequency", "Imperatives"],
             "Vocabulary": ["Daily Routines", "Study Habits", "Classroom Objects", "Instructions"],
             "Reading": ["An Interview with a Successful Student", "Effective Study Tips (Listicle)", "Comparing Two Students' Daily Schedules", "A Diary Entry about a Busy Day", "A Survey about Classroom Habits", "A Set of Rules for the School Library", "A 'How-To' Guide for Taking Good Notes", "An Article about Different Learning Styles", "A Text Message Conversation about Homework", "A Profile of a Favorite Teacher"],
-            "Speaking": ["Describing Your Typical School Day", "Giving Instructions to a Classmate", "Role-Play: Asking a Teacher for Help", "Discussing Good and Bad Study Habits", "Comparing Your Weekend Routine with a Partner's", "A Short Talk about Your Morning Routine", "Explaining How to Do Something (e.g., Use a Classroom Object)", "Group Discussion: How to Make Our Classroom Better", "Role-Play: Forgetting Your Homework", "A Mini-Presentation on an Effective Study Tip"],
+            "Speaking": ["Describing Your Typical School Day", "Giving Instructions to a Classmate", "Role-Play: Asking a Teacher for Help", "Discussing Good and Bad Study Habits", "Comparing Your Weekend Routine with a Partner's", "A Short Talk about Your Morning Routine", "Explaining How to Do Something", "Group Discussion: How to Make Our Classroom Better", "Role-Play: Forgetting Your Homework", "A Mini-Presentation on an Effective Study Tip"],
             "Writing": ["Creating a Weekly Study Plan", "Paragraph Describing a Perfect School Day", "An E-mail Giving Study Advice to a Friend", "A Diary Entry about Today's Lessons", "A Set of Instructions for a Classroom Game", "A 'Top 5' List of Good Study Habits", "A Short Paragraph about Your Morning Routine", "A Note to a Teacher Explaining an Absence", "Creating a 'Classroom Rules' Poster", "A Short Story about a Funny Classroom Moment"],
             "Pronunciation": ["Vowels (/e/, /æ/)", "Consonants (/f/, /g/, /dʒ/, /h/)"]
         },
@@ -92,7 +92,7 @@ meb_curriculum = {
             "Grammar": ["Adjectives (personality/appearance)", "'too' / 'enough'"],
             "Vocabulary": ["Physical Appearance", "Personality Traits", "Hobbies and Interests"],
             "Reading": ["A Magazine Article about a Celebrity", "A Fictional Character Profile", "An Online Forum Discussion about Hobbies", "A 'Guess Who?' Description Game", "A Blog Post about a New Hobby", "A Comparison of Two Friends", "A Short Story about a Shy Character", "A Survey about Personality Types", "An Advice Column about Making Friends", "A Review of a Mobile App for Hobbies"],
-            "Speaking": ["Describing a Friend's Personality and Appearance", "Talking about Your Hobbies and Interests", "Role-Play: Complimenting a Friend", "Guessing Game: Describing a Mystery Person", "Comparing Your Hobbies with a Partner's", "A Short Talk about Your Favorite Fictional Character", "Discussing Personality Traits Needed for a Job", "Role-Play: Inviting a Friend to Join a Hobby", "Explaining Why You Like a Certain Hobby", "A Mini-Debate: Indoor vs. Outdoor Hobbies"],
+            "Speaking": ["Describing a Friend's Personality and Appearance", "Talking about Your Hobbies and Interests", "Role-Play: Complimenting a Friend", "Guessing Game: Describing a Mystery Person", "Comparing Your Hobbies with a Partner's", "A Short Talk about Your Favorite Fictional Character", "Discussing Personality Traits for a Job", "Role-Play: Inviting a Friend to Join a Hobby", "Explaining Why You Like a Certain Hobby", "A Mini-Debate: Indoor vs. Outdoor Hobbies"],
             "Writing": ["Paragraph Describing a Best Friend", "Creating a Fictional Character Profile", "Writing a Blog Post about a Favorite Hobby", "A 'Wanted' Poster for a Lost Pet (with description)", "A Short Paragraph about Your Personality", "Describing a Family Member's Appearance and Personality", "A 'Top 3' List of Your Favorite Hobbies", "An Online Profile for a Social Media Site", "A Short Story Featuring a Brave Character", "An Email to a Friend Suggesting a New Hobby"],
             "Pronunciation": ["Vowels (/iː/, /ɪ/, /aɪ/)", "Consonants (/ʒ/, /k/, /l/)"]
         },
@@ -108,7 +108,7 @@ meb_curriculum = {
             "Grammar": ["Present Continuous", "There is/are", "Possessive adjectives"],
             "Vocabulary": ["Types of houses", "Rooms", "Furniture", "Household chores"],
             "Reading": ["Real Estate Ads (House Descriptions)", "Informational Text on Unique House Types", "A Blog Post about Life in a Neighbourhood", "A Dialogue between New Neighbours", "A 'House Tour' Article from a Magazine", "A Short Story Set in a Mysterious House", "A Survey about Household Chores", "An Article Comparing City and Suburb Life", "A Set of Rules for an Apartment Building", "A Review of a Local Park or Cafe"],
-            "Speaking": ["Describing Your Own House in Detail", "Describing a Picture of a Room (What People Are Doing)", "Role-Play: Calling a Landlord to Report a Problem", "Comparing Your House with a Friend's", "A Short Presentation about Your Dream House", "Giving a Tour of Your Imaginary House", "Discussing the Pros and Cons of Living in a Flat vs. a House", "Describing Your Neighbourhood to a Visitor", "Role-Play: Asking a Neighbour for a Favor", "Explaining How to Do a Household Chore"],
+            "Speaking": ["Describing Your Own House in Detail", "Describing a Picture of a Room (What People Are Doing)", "Role-Play: Calling a Landlord to Report a Problem", "Comparing Your House with a Friend's", "A Short Presentation about Your Dream House", "Giving a Tour of Your Imaginary House", "Discussing Pros and Cons of a Flat vs. a House", "Describing Your Neighbourhood to a Visitor", "Role-Play: Asking a Neighbour for a Favor", "Explaining How to Do a Household Chore"],
             "Writing": ["A Paragraph Describing a Dream House", "Writing a 'For Rent' Advertisement", "A Note to a Neighbour about a Party", "A 'Welcome to the Neighbourhood' Card for a New Family", "A List of Pros and Cons of Your Neighbourhood", "A Short Paragraph about Your Favorite Room", "Describing What is Happening in a Picture of a House", "An E-mail to a Friend Describing Your New Home", "Creating a List of House Rules for a Guest", "A Short Story about a Lost Item in the House"],
             "Pronunciation": ["Consonants (/q/ as in quick, /r/, /s/, /ʃ/ as in shower)"]
         },
@@ -116,7 +116,7 @@ meb_curriculum = {
             "Grammar": ["Present Simple vs. Present Continuous", "Wh- questions", "'or' for options"],
             "Vocabulary": ["Food culture", "Food festivals", "Ingredients", "Local and international dishes"],
             "Reading": ["A Newspaper Article about a Food Festival", "The History of a Traditional Turkish Dish", "A Chef's Blog Post", "A Restaurant Review", "A Travel Guide Excerpt about Local Cuisine", "An Interview with a Street Food Vendor", "A Dialogue about Ordering Food", "A Recipe for a Simple Dish", "A Comparison of Two Different Cuisines", "A 'Top 5' List of Must-Try Foods in a City"],
-            "Speaking": ["Role-Playing a Scene at a Food Festival", "Asking for Options in a Restaurant", "Describing Your Favorite Food", "Comparing Street Food and Restaurant Food", "A Short Presentation on a Traditional Dish from Your Country", "Discussing the Importance of Food Culture", "Role-Play: A Phone Call to Order a Pizza", "Explaining a Simple Recipe Step-by-Step", "A Mini-Debate: Is Fast Food Always Unhealthy?", "Interviewing a Partner about Their Eating Habits"],
+            "Speaking": ["Role-Playing a Scene at a Food Festival", "Asking for Options in a Restaurant", "Describing Your Favorite Food", "Comparing Street Food and Restaurant Food", "A Short Presentation on a Traditional Dish", "Discussing the Importance of Food Culture", "Role-Play: A Phone Call to Order a Pizza", "Explaining a Simple Recipe Step-by-Step", "A Mini-Debate: Is Fast Food Always Unhealthy?", "Interviewing a Partner about Their Eating Habits"],
             "Writing": ["Writing a Blog Post about a Food Festival", "Writing a Recipe for a Favorite Dish", "A Simple Restaurant Review", "An E-mail to a Friend Recommending a Restaurant", "A Paragraph Comparing Two Types of Food", "Creating a Menu for a Small Cafe", "A Short Story about a Memorable Meal", "A 'Food Diary' for a Day", "Describing Your Country's National Dish", "A Thank-You Note to a Host for a Delicious Meal"],
             "Pronunciation": ["Vowels (/uː/, /ʊ/)", "Consonants (/t/, /ð/, /θ/, /v/)"]
         },
@@ -132,7 +132,7 @@ meb_curriculum = {
             "Grammar": ["Future Simple (will) for predictions and beliefs", "Simple Present for describing films"],
             "Vocabulary": ["Films and film genres", "Futuristic ideas (robots, space exploration)", "Technology"],
             "Reading": ["A Sci-Fi Movie Review", "An Article about Future Technologies", "An Interview with a Famous Director", "A Short Sci-Fi Story", "A 'Top 5' List of Predictions for the Future", "A Blog Post about the Impact of Technology on Daily Life", "A Comparison of Two Sci-Fi Films", "A Profile of a Tech Inventor", "A Text about the Possibility of Life on other Planets", "A Humorous Look at Old Predictions about the Future"],
-            "Speaking": ["Making Predictions about the Future (e.g., schools, transport)", "Talking about Your Favorite Films and Genres", "A Short Presentation on a Piece of Future Technology", "Role-Play: Trying to Explain Today's Technology to Someone from the Past", "A Mini-Debate: Will Robots Be Good for Humanity?", "Comparing Two Movie Characters", "Describing a Sci-Fi Movie Plot to a Friend", "Discussing the Pros and Cons of Social Media", "Explaining How a Piece of Technology Works", "Role-Play: Pitching a New Sci-Fi Movie Idea"],
+            "Speaking": ["Making Predictions about the Future (e.g., schools, transport)", "Talking about Your Favorite Films and Genres", "A Short Presentation on a Piece of Future Technology", "Role-Play: Explaining Today's Technology to Someone from the Past", "A Mini-Debate: Will Robots Be Good for Humanity?", "Comparing Two Movie Characters", "Describing a Sci-Fi Movie Plot to a Friend", "Discussing the Pros and Cons of Social Media", "Explaining How a Piece of Technology Works", "Role-Play: Pitching a New Sci-Fi Movie Idea"],
             "Writing": ["A Day in 2050 (Short Story)", "Paragraph Describing a Favorite Sci-Fi Movie", "Describing a Dream Robot", "An E-mail to a Friend about a Movie You Just Watched", "A 'For and Against' Paragraph about Artificial Intelligence", "My Predictions for the Next 10 Years (List)", "Creating a Character for a Sci-Fi Story", "A Short Review of a Tech Gadget", "A Story about Time Travel", "Writing the Plot Summary for a New Movie Idea"],
             "Pronunciation": ["Diphthong (/əʊ/ as in show)", "Consonants (/j/ as in year, /z/)"]
         }
@@ -197,7 +197,7 @@ with st.sidebar:
             differentiation_type = st.radio("Aktivite Düzeyi", ["Destekleyici (Supporting)", "İleri Düzey (Expansion)"])
 
 # -----------------------------
-# PROMPT OLUŞTURMA FONKSİYONLARI
+# PROMPT OLUŞTURMA FONKSİYONLARI (GÜNCELLENDİ)
 # -----------------------------
 def get_activity_suggestions(skill):
     suggestions = {
@@ -224,30 +224,38 @@ Unit: "{kwargs.get('unit')}"
     if kwargs.get('topics'):
         topic_text = f"**Strict Focus:** The material MUST ONLY focus on the following topic(s): {', '.join(kwargs.get('topics'))}."
 
+    # YENİ: Becerileri entegre etme talimatı
+    integration_text = ""
+    skill = kwargs.get('skill')
+    if skill in ["Reading", "Writing", "Speaking"]:
+        unit_data = meb_curriculum[kwargs.get('grade')][kwargs.get('unit')]
+        grammar_focus = ", ".join(unit_data.get("Grammar", []))
+        vocab_focus = ", ".join(unit_data.get("Vocabulary", []))
+        integration_text = f"""
+**Pedagogical Integration Requirement:** The '{skill}' activity you create MUST naturally include and provide context for the following language points from this unit:
+- **Grammar to Integrate:** {grammar_focus}
+- **Vocabulary to Integrate:** {vocab_focus}
+"""
+    
     prompts = {
         "Günlük Ders Planı": f"""
         **Task:** Create a detailed 40-minute daily lesson plan for {kwargs.get('date')}.
         **Today's Specific Focus:** "{kwargs.get('context')}"
         {language_instruction}
-
         The plan MUST be well-structured, using clear headings (like **Objective:**, **Materials:**, **Warm-Up (5 min):** etc.) and bullet points.
-        It must include:
-        1.  **Objective(s):** Very specific goals for this single lesson.
-        2.  **Materials:** A simple list.
-        3.  **Lesson Stages (with exact timings):** Warm-Up (5 min), Presentation/Activity 1 (15 min), Practice/Activity 2 (15 min), Wrap-Up & Homework (5 min).
-        - The plan must be practical and student-centered.
+        It must be practical and student-centered.
         """,
         "Çalışma Sayfası": f"""
-        Focus Skill: "{kwargs.get('skill')}"
+        Focus Skill: "{skill}"
         {topic_text}
-        
+        {integration_text}
         Create a worksheet with exactly {kwargs.get('num_questions')} questions.
-        - **Instruction for AI:** Ensure activities are diverse. Use a variety of task types like {get_activity_suggestions(kwargs.get('skill'))}.
+        - **Instruction for AI:** Ensure activities are diverse. Use a variety of task types like {get_activity_suggestions(skill)}.
         - **Strict Rule:** Do NOT include questions for any other skill.
         - Start with a title and a one-sentence instruction.
-        - Use markdown for formatting (e.g., **bold** for headings).
         - End with a separate 'Answer Key' section.
         """,
+        # ... Diğer prompt'lar da integration_text'i kullanabilir ...
         "Ders Planı (Genel)": f"""
         Create a 40-minute lesson plan for the selected unit.
         {language_instruction}
@@ -257,6 +265,7 @@ Unit: "{kwargs.get('unit')}"
         """,
         "Dinleme Aktivitesi Senaryosu": f"""
         Create a listening activity.
+        {integration_text}
         - **Crucial Instruction for AI:** The audio script MUST be completely original and unique. Do NOT repeat scripts.
         - Write a short, natural-sounding audio script (100-150 words).
         - After the script, create 5 comprehension questions.
@@ -264,12 +273,12 @@ Unit: "{kwargs.get('unit')}"
         """,
         "Ünite Tekrar Testi": f"""
         Create a cumulative unit review test with {kwargs.get('num_questions')} questions.
-        - The test must focus on the selected skill: {kwargs.get('skill')} and topics: {', '.join(kwargs.get('topics', []))}.
+        - The test must focus on the selected skill: {skill} and topics: {', '.join(kwargs.get('topics', []))}.
         - Include varied question formats.
         - End with an 'Answer Key' section.
         """,
         "Değerlendirme Rubriği": f"""
-        Focus Skill: "{kwargs.get('skill')}"
+        Focus Skill: "{skill}"
         {topic_text}
         Create a simple assessment rubric.
         - Use 3 levels: 'Excellent', 'Good', 'Needs Improvement'.
@@ -277,10 +286,10 @@ Unit: "{kwargs.get('unit')}"
         - Provide a brief descriptor for each level.
         """,
         "Ek Çalışma (Farklılaştırılmış)": f"""
-        Focus Skill: "{kwargs.get('skill')}"
+        Focus Skill: "{skill}"
         Activity Level: "{kwargs.get('diff_type')}"
         {topic_text}
-        
+        {integration_text}
         Create a differentiated activity.
         - If 'Supporting', design a highly-structured task.
         - If 'Expansion', design a task requiring creative or critical thinking.
@@ -297,6 +306,7 @@ Unit: "{kwargs.get('unit')}"
         
     return final_prompt.strip()
 
+
 # -----------------------------
 # GEMINI API ÇAĞRISI
 # -----------------------------
@@ -312,7 +322,7 @@ def call_gemini_api(_prompt_text):
         return f"API Hatası: {e}"
 
 # -----------------------------
-# ÇIKTI OLUŞTURMA FONKSİYONLARI (PDF & DOCX - YENİLENDİ)
+# ÇIKTI OLUŞTURMA FONKSİYONLARI
 # -----------------------------
 def create_pdf(content, grade, unit):
     buffer = io.BytesIO()
@@ -322,25 +332,19 @@ def create_pdf(content, grade, unit):
                             topMargin=margin, bottomMargin=margin)
     
     styles = getSampleStyleSheet()
-    # Başlık stili: 11 punto, kalın
     styles.add(ParagraphStyle(name='Heading1_Custom', fontName='DejaVuSans-Bold', 
                               fontSize=11, leading=15, spaceAfter=10))
-    # Normal metin stili: 10 punto
     styles.add(ParagraphStyle(name='Normal_Custom', fontName='DejaVuSans', 
                               fontSize=10, leading=14, spaceAfter=6))
-    # Madde imli liste stili
     styles.add(ParagraphStyle(name='Bullet_Custom', parent=styles['Normal_Custom'], 
                               leftIndent=20))
 
     Story = []
 
-    # Üst ve alt bilgiyi her sayfaya ekleyen fonksiyon
     def header_footer(canvas, doc):
         canvas.saveState()
         canvas.setFont("DejaVuSans", 8)
-        # Üst bilgi
         canvas.drawString(margin, A4[1] - margin + 0.5*cm, f"{grade} - {unit} | QuickSheet v1.7")
-        # Alt bilgi
         canvas.drawCentredString(A4[0] / 2.0, 0.75 * cm, f"Sayfa {doc.page}")
         canvas.restoreState()
 
@@ -348,17 +352,14 @@ def create_pdf(content, grade, unit):
     for line in lines:
         line = line.strip()
         if not line:
-             # Boşlukları yönetmek için Spacer kullan
              Story.append(Spacer(1, 4))
              continue
 
-        # Markdown'dan ReportLab formatına dönüştürme (sadece bold için)
         formatted_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
 
         if line.startswith('# '):
             Story.append(Paragraph(formatted_line[2:], styles['Heading1_Custom']))
         elif line.startswith('- '):
-            # Madde imleri için doğru formatlama
             p_text = f"• {formatted_line[2:]}"
             p = Paragraph(p_text, styles['Bullet_Custom'])
             Story.append(p)
@@ -373,29 +374,26 @@ def create_docx(content):
     buffer = io.BytesIO()
     doc = Document()
     
-    # Kenar boşluklarını ayarla
     section = doc.sections[0]
     section.top_margin = Cm(1.27)
     section.bottom_margin = Cm(1.27)
     section.left_margin = Cm(1.27)
     section.right_margin = Cm(1.27)
 
-    # Stilleri tanımla
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Calibri'
-    font.size = Pt(10) # Normal metin 10 punto
+    font.size = Pt(10)
 
     heading_style = doc.styles.add_style('Heading1_Custom', 1)
     font = heading_style.font
     font.name = 'Calibri'
-    font.size = Pt(11) # Başlık 11 punto
+    font.size = Pt(11)
     font.bold = True
 
     for line in content.split('\n'):
         line = line.strip()
         if not line:
-            # Boş satırları tek bir boş paragraf olarak ekle
             if len(doc.paragraphs) > 0 and doc.paragraphs[-1].text == "":
                 continue
             doc.add_paragraph()
@@ -403,14 +401,12 @@ def create_docx(content):
 
         if line.startswith('# '):
             p = doc.add_paragraph(line[2:], style='Heading1_Custom')
-            # Başlık sonrası boşluğu ayarla
             p.paragraph_format.space_after = Pt(6)
         elif line.startswith('- '):
             p = doc.add_paragraph(line[2:], style='List Bullet')
             p.paragraph_format.space_after = Pt(2)
         else:
             p = doc.add_paragraph()
-            # Satır içindeki kalın metinleri işle
             parts = re.split(r'(\*\*.*?\*\*)', line)
             for part in parts:
                 if part.startswith('**') and part.endswith('**'):
@@ -430,7 +426,6 @@ def create_docx(content):
 # ANA UYGULAMA AKIŞI
 # -----------------------------
 if st.button("✨ 1. Adım: Materyal Taslağını Oluştur", type="primary", use_container_width=True):
-    # Seçilen ve özel girilen konuları birleştir
     final_topics = []
     if skill_needed:
         final_topics.extend(selected_topics_from_list)
