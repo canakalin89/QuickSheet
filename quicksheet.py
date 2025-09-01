@@ -10,7 +10,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from docx import Document
 from docx.shared import Pt, Cm
 import time
-import google.genergenerativeai as genai
+import google.generativeai as genai
 import io
 import re
 import random
