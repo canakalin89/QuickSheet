@@ -2,7 +2,9 @@ import streamlit as st
 import os
 import requests
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from docx import Document
@@ -15,7 +17,7 @@ import random
 from datetime import date
 
 # -----------------------------
-# SAYFA YAPISI VE BAŞLANGIÇ AYARLARI (VERSİYON GÜNCELLENDİ)
+# SAYFA YAPISI VE BAŞLANGIÇ AYARLARI
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v1.7: 9. Sınıf Asistanı", page_icon="⚡", layout="wide")
 st.title("⚡ Quicksheet v1.7: 9. Sınıf İngilizce Öğretmeni Asistanı")
@@ -73,69 +75,70 @@ meb_curriculum = {
         "Theme 1: School Life": {
             "Grammar": ["Simple Present (to be)", "Modal 'can' (possibility/ability)", "Simple Past (was/were)"],
             "Vocabulary": ["Countries and Nationalities", "Languages and Capitals", "Tourist Attractions", "School Rules"],
-            "Reading": ["School Life Descriptions", "Cultural Exchange Texts"],
+            "Reading": ["A Student's First Day at School (Blog Post)", "School Club Descriptions", "An E-mail from an Exchange Student", "A Dialogue about School Rules", "A Short Text about a Famous Landmark", "A Country Profile (Fact File)", "Travel Forum Posts", "A Quiz about World Capitals", "An Interview with a Foreign Student", "A School Trip Itinerary"],
             "Speaking": ["Introducing Oneself", "Describing Countries", "Talking about Tourist Spots"],
-            "Writing": ["Paragraph about School Rules", "Paragraph about a Travel Destination"],
+            "Writing": ["Writing a Welcome E-mail to a New Student", "Paragraph Describing a Dream Holiday Destination", "Writing a Postcard from Abroad", "Creating a School Club Poster", "A Short Blog Post about Your School", "A 'Top 5' List of Places to Visit in Your City", "A Short Dialogue between Two New Students", "Answering Questions about Your Country", "Writing a Short Quiz about Nationalities", "Planning a Weekend Trip for a Visitor"],
             "Pronunciation": ["Long and short vowels (/æ/, /ɑː/, /eɪ/)", "Consonants (/b/, /k/, /d/)"]
         },
         "Theme 2: Classroom Life": {
             "Grammar": ["Simple Present (routines)", "Adverbs of Frequency", "Imperatives"],
             "Vocabulary": ["Daily Routines", "Study Habits", "Classroom Objects", "Instructions"],
-            "Reading": ["Texts on Daily Routines", "Study Habits Articles"],
+            "Reading": ["An Interview with a Successful Student", "Effective Study Tips (Listicle)", "Comparing Two Students' Daily Schedules", "A Diary Entry about a Busy Day", "A Survey about Classroom Habits", "A Set of Rules for the School Library", "A 'How-To' Guide for Taking Good Notes", "An Article about Different Learning Styles", "A Text Message Conversation about Homework", "A Profile of a Favorite Teacher"],
             "Speaking": ["Describing a Typical School Day", "Giving Instructions"],
-            "Writing": ["Paragraph about Personal Study Habits"],
+            "Writing": ["Creating a Weekly Study Plan", "Paragraph Describing a Perfect School Day", "An E-mail Giving Study Advice to a Friend", "A Diary Entry about Today's Lessons", "A Set of Instructions for a Classroom Game", "A 'Top 5' List of Good Study Habits", "A Short Paragraph about Your Morning Routine", "A Note to a Teacher Explaining an Absence", "Creating a 'Classroom Rules' Poster", "A Short Story about a Funny Classroom Moment"],
             "Pronunciation": ["Vowels (/e/, /æ/)", "Consonants (/f/, /g/, /dʒ/, /h/)"]
         },
         "Theme 3: Personal Life": {
             "Grammar": ["Adjectives (personality/appearance)", "'too' / 'enough'"],
             "Vocabulary": ["Physical Appearance", "Personality Traits", "Hobbies and Interests"],
-            "Reading": ["Descriptions of People", "Personal Blogs about Hobbies"],
+            "Reading": ["A Magazine Article about a Celebrity", "A Fictional Character Profile", "An Online Forum Discussion about Hobbies", "A 'Guess Who?' Description Game", "A Blog Post about a New Hobby", "A Comparison of Two Friends", "A Short Story about a Shy Character", "A Survey about Personality Types", "An Advice Column about Making Friends", "A Review of a Mobile App for Hobbies"],
             "Speaking": ["Describing a Friend's Personality", "Talking about Hobbies"],
-            "Writing": ["A Short Description of a Family Member"],
+            "Writing": ["Paragraph Describing a Best Friend", "Creating a Fictional Character Profile", "Writing a Blog Post about a Favorite Hobby", "A 'Wanted' Poster for a Lost Pet (with description)", "A Short Paragraph about Your Personality", "Describing a Family Member's Appearance and Personality", "A 'Top 3' List of Your Favorite Hobbies", "An Online Profile for a Social Media Site", "A Short Story Featuring a Brave Character", "An Email to a Friend Suggesting a New Hobby"],
             "Pronunciation": ["Vowels (/iː/, /ɪ/, /aɪ/)", "Consonants (/ʒ/, /k/, /l/)"]
         },
         "Theme 4: Family Life": {
             "Grammar": ["Simple Present (jobs and work routines)", "Prepositions of place (in/on/at for workplaces)"],
             "Vocabulary": ["Family members", "Jobs and Occupations", "Workplaces", "Work Activities"],
-            "Reading": ["Texts about different family members' jobs", "Daily routines of professionals"],
+            "Reading": ["A 'Day in the Life' Article about a Doctor", "Informational Texts about Different Jobs", "An Interview with a Parent about Their Job", "A Family Tree with Job Descriptions", "A Short Story about a Family Business", "Comparing Office Work vs. Outdoor Work", "A Job Advertisement", "A Career Advice Blog Post", "A Text about Unusual Jobs", "A Biography of a Successful Entrepreneur"],
             "Speaking": ["Talking about family members' occupations", "Asking about jobs"],
-            "Writing": ["A paragraph about a family member's job"],
+            "Writing": ["Paragraph Describing a Family Member's Job", "Describing a Dream Job", "A Simple Job Application E-mail", "A 'Bring Your Parent to School Day' Invitation", "A Short Paragraph about 'My Future Career'", "Creating a 'Job Profile' for a Family Member", "A List of Questions to Interview a Professional", "A Short Story about a Child Helping a Parent at Work", "A Thank-You Note to a Working Parent", "Describing a Workplace"],
             "Pronunciation": ["Vowels (/ɒ/, /ɔː/)", "Consonants (/m/, /n/, /p/)"]
         },
         "Theme 5: House & Neighbourhood": {
             "Grammar": ["Present Continuous", "There is/are", "Possessive adjectives"],
             "Vocabulary": ["Types of houses", "Rooms", "Furniture", "Household chores"],
-            "Reading": ["Descriptions of houses or neighborhoods"],
+            "Reading": ["Real Estate Ads (House Descriptions)", "Informational Text on Unique House Types", "A Blog Post about Life in a Neighbourhood", "A Dialogue between New Neighbours", "A 'House Tour' Article from a Magazine", "A Short Story Set in a Mysterious House", "A Survey about Household Chores", "An Article Comparing City and Suburb Life", "A Set of Rules for an Apartment Building", "A Review of a Local Park or Cafe"],
             "Speaking": ["Describing your own house", "Describing a picture of a room"],
-            "Writing": ["A short text about your dream house"],
+            "Writing": ["A Paragraph Describing a Dream House", "Writing a 'For Rent' Advertisement", "A Note to a Neighbour about a Party", "A 'Welcome to the Neighbourhood' Card for a New Family", "A List of Pros and Cons of Your Neighbourhood", "A Short Paragraph about Your Favorite Room", "Describing What is Happening in a Picture of a House", "An E-mail to a Friend Describing Your New Home", "Creating a List of House Rules for a Guest", "A Short Story about a Lost Item in the House"],
             "Pronunciation": ["Consonants (/q/ as in quick, /r/, /s/, /ʃ/ as in shower)"]
         },
         "Theme 6: City & Country": {
             "Grammar": ["Present Simple vs. Present Continuous", "Wh- questions", "'or' for options"],
             "Vocabulary": ["Food culture", "Food festivals", "Ingredients", "Local and international dishes"],
-            "Reading": ["Texts about food festivals or traditional cuisines"],
+            "Reading": ["A Newspaper Article about a Food Festival", "The History of a Traditional Turkish Dish", "A Chef's Blog Post", "A Restaurant Review", "A Travel Guide Excerpt about Local Cuisine", "An Interview with a Street Food Vendor", "A Dialogue about Ordering Food", "A Recipe for a Simple Dish", "A Comparison of Two Different Cuisines", "A 'Top 5' List of Must-Try Foods in a City"],
             "Speaking": ["Role-playing at a food festival", "Asking for options"],
-            "Writing": ["A blog post about a food festival you attended"],
+            "Writing": ["Writing a Blog Post about a Food Festival", "Writing a Recipe for a Favorite Dish", "A Simple Restaurant Review", "An E-mail to a Friend Recommending a Restaurant", "A Paragraph Comparing Two Types of Food", "Creating a Menu for a Small Cafe", "A Short Story about a Memorable Meal", "A 'Food Diary' for a Day", "Describing Your Country's National Dish", "A Thank-You Note to a Host for a Delicious Meal"],
             "Pronunciation": ["Vowels (/uː/, /ʊ/)", "Consonants (/t/, /ð/, /θ/, /v/)"]
         },
         "Theme 7: World & Nature": {
             "Grammar": ["Simple Past (was/were, there was/were)", "Modal 'should' (advice)"],
             "Vocabulary": ["Endangered animals", "Habitats", "Environmental problems (habitat loss, pollution)"],
-            "Reading": ["Texts about endangered species and conservation efforts"],
+            "Reading": ["A Fact File about an Endangered Animal", "A News Report on a Conservation Project", "A Volunteer's Diary from a Wildlife Shelter", "An Article about the Dangers of Plastic Pollution", "A Short Story about Saving an Animal", "An Interview with a Marine Biologist", "A 'Then and Now' Text about a Habitat", "A List of 'Do's and Don'ts' for Protecting Nature", "A Poem about the Beauty of Nature", "A Debate Text about Zoos"],
             "Speaking": ["Giving advice on how to protect nature", "Discussing environmental problems"],
-            "Writing": ["A short paragraph about an endangered animal"],
+            "Writing": ["Paragraph on How to Protect Nature", "Writing an E-mail to an Animal Protection Organization", "Text for a 'Save the Planet' Poster", "A Short Paragraph Giving Advice to a Friend on Being Eco-Friendly", "A Fact File about an Endangered Animal from Your Country", "A Short Story from an Animal's Perspective", "A 'Promise to the Planet' Pledge", "A Letter to the Editor about a Local Environmental Issue", "Creating a Slogan for a Conservation Campaign", "Describing a Beautiful Natural Place You Have Visited"],
             "Pronunciation": ["Diphthongs (/eə/ as in bear, /ɪə/ as in deer)", "Consonants (/w/, /ks/)"]
         },
         "Theme 8: Universe & Future": {
             "Grammar": ["Future Simple (will) for predictions and beliefs", "Simple Present for describing films"],
             "Vocabulary": ["Films and film genres", "Futuristic ideas (robots, space exploration)", "Technology"],
-            "Reading": ["Film reviews", "Short texts about future technology"],
+            "Reading": ["A Sci-Fi Movie Review", "An Article about Future Technologies", "An Interview with a Famous Director", "A Short Sci-Fi Story", "A 'Top 5' List of Predictions for the Future", "A Blog Post about the Impact of Technology on Daily Life", "A Comparison of Two Sci-Fi Films", "A Profile of a Tech Inventor", "A Text about the Possibility of Life on other Planets", "A Humorous Look at Old Predictions about the Future"],
             "Speaking": ["Making predictions about the future", "Talking about favorite films"],
-            "Writing": ["A short futuristic story", "A review of a sci-fi film"],
+            "Writing": ["A Day in 2050 (Short Story)", "Paragraph Describing a Favorite Sci-Fi Movie", "Describing a Dream Robot", "An E-mail to a Friend about a Movie You Just Watched", "A 'For and Against' Paragraph about Artificial Intelligence", "My Predictions for the Next 10 Years (List)", "Creating a Character for a Sci-Fi Story", "A Short Review of a Tech Gadget", "A Story about Time Travel", "Writing the Plot Summary for a New Movie Idea"],
             "Pronunciation": ["Diphthong (/əʊ/ as in show)", "Consonants (/j/ as in year, /z/)"]
         }
     }
 }
+
 
 # -----------------------------
 # SIDEBAR - KULLANICI ARAYÜZÜ
@@ -298,7 +301,7 @@ def call_gemini_api(_prompt_text):
     try:
         response = model.generate_content(
             _prompt_text,
-            generation_config={"max_output_tokens": 2048, "temperature": 0.9}
+            generation_config={"max_output_tokens": 2048, "temperature": 0.95}
         )
         return response.text.strip()
     except Exception as e:
@@ -309,59 +312,40 @@ def call_gemini_api(_prompt_text):
 # -----------------------------
 def create_pdf(content, grade, unit):
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
     
-    def draw_page_header_footer(page_number):
-        p.saveState()
-        p.setFont("DejaVuSans", 8)
-        p.drawString(50, height - 40, f"{grade} - {unit}")
-        p.drawRightString(width - 50, height - 40, "QuickSheet v1.7")
-        p.drawCentredString(width / 2.0, 30, f"Sayfa {page_number}")
-        p.restoreState()
-        
-    page_num = 1
-    draw_page_header_footer(page_num)
-    y = height - 70
-    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Normal_Custom', fontName='DejaVuSans', fontSize=10, leading=14))
+    styles.add(ParagraphStyle(name='Heading1_Custom', fontName='DejaVuSans-Bold', fontSize=16, leading=20, spaceAfter=12))
+    styles.add(ParagraphStyle(name='Bullet_Custom', parent=styles['Normal_Custom'], leftIndent=20))
+
+    Story = []
+
+    def header_footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("DejaVuSans", 8)
+        canvas.drawString(A4[0] - 1.5*72, A4[1] - 50, f"{grade} - {unit} | QuickSheet v1.7")
+        canvas.drawCentredString(A4[0] / 2.0, 30, f"Sayfa {doc.page}")
+        canvas.restoreState()
+
     lines = content.split('\n')
     for line in lines:
         line = line.strip()
-        
-        if y < 60:
-            p.showPage()
-            page_num += 1
-            draw_page_header_footer(page_num)
-            y = height - 70
-        
-        x = 50
-        if line.startswith('# '):
-            p.setFont("DejaVuSans-Bold", 14)
-            p.drawString(x, y, line[2:])
-            y -= 25
-        elif line.startswith('- '):
-            p.drawString(x + 10, y, f"• {line[2:]}")
-            y -= 20
-        else:
-            parts = re.split(r'(\*\*.*?\*\*)', line)
-            for part in parts:
-                if part.startswith('**') and part.endswith('**'):
-                    p.setFont("DejaVuSans-Bold", 10)
-                    text_to_draw = part[2:-2]
-                else:
-                    p.setFont("DejaVuSans", 10)
-                    text_to_draw = part
-                
-                # Word wrapping for long lines
-                if x + p.stringWidth(text_to_draw, p._fontname, p._fontsize) > width - 50:
-                    y -= 20
-                    x = 50
-                
-                p.drawString(x, y, text_to_draw)
-                x += p.stringWidth(text_to_draw, p._fontname, p._fontsize)
-            y -= 20
+        if not line: continue
 
-    p.save()
+        # Markdown'dan ReportLab formatına dönüştürme
+        formatted_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
+
+        if line.startswith('# '):
+            Story.append(Paragraph(formatted_line[2:], styles['Heading1_Custom']))
+        elif line.startswith('- '):
+            p = Paragraph(f"• {formatted_line[2:]}", styles['Bullet_Custom'])
+            Story.append(p)
+        else:
+            Story.append(Paragraph(formatted_line, styles['Normal_Custom']))
+        Story.append(Spacer(1, 8)) # Paragraflar arasına boşluk ekle
+
+    doc.build(Story, onFirstPage=header_footer, onLaterPages=header_footer)
     buffer.seek(0)
     return buffer
 
@@ -374,6 +358,7 @@ def create_docx(content):
     for line in content.split('\n'):
         line = line.strip()
         if not line:
+            # Boş satırları korumak için
             doc.add_paragraph()
             continue
 
@@ -384,6 +369,7 @@ def create_docx(content):
             p = doc.add_paragraph(line[2:], style='List Bullet')
         else:
             p = doc.add_paragraph()
+            # Satır içindeki kalın metinleri işle
             parts = re.split(r'(\*\*.*?\*\*)', line)
             for part in parts:
                 if part.startswith('**') and part.endswith('**'):
