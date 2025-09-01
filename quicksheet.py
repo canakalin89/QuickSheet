@@ -4,11 +4,11 @@ import requests
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT
+from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Cm
 import time
 import google.generativeai as genai
 import io
@@ -170,17 +170,21 @@ with st.sidebar:
         
         topic_options = meb_curriculum[selected_grade][selected_unit].get(selected_skill, [])
         if topic_options:
-            selected_topics = st.multiselect(
+            selected_topics_from_list = st.multiselect(
                 "Hangi Konulara Odaklanılsın?",
                 topic_options,
                 default=topic_options[0] if topic_options else []
             )
         else:
-            selected_topics = []
+            selected_topics_from_list = []
+        
+        custom_topics = st.text_input("Veya Kendi Konularınızı Ekleyin (virgülle ayırarak)", key="custom_topics_input")
             
     else:
         selected_skill = "Genel"
-        selected_topics = []
+        selected_topics_from_list = []
+        custom_topics = ""
+
 
     with st.expander("Gelişmiş Ayarlar"):
         include_clil = st.checkbox("CLIL İçeriği Ekle (Teknoloji, Bilim vb.)")
@@ -308,42 +312,58 @@ def call_gemini_api(_prompt_text):
         return f"API Hatası: {e}"
 
 # -----------------------------
-# ÇIKTI OLUŞTURMA FONKSİYONLARI (PDF & DOCX - GÜNCELLENDİ)
+# ÇIKTI OLUŞTURMA FONKSİYONLARI (PDF & DOCX - YENİLENDİ)
 # -----------------------------
 def create_pdf(content, grade, unit):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    margin = 1.27 * cm
+    doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                            rightMargin=margin, leftMargin=margin, 
+                            topMargin=margin, bottomMargin=margin)
     
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Normal_Custom', fontName='DejaVuSans', fontSize=10, leading=14))
-    styles.add(ParagraphStyle(name='Heading1_Custom', fontName='DejaVuSans-Bold', fontSize=16, leading=20, spaceAfter=12))
-    styles.add(ParagraphStyle(name='Bullet_Custom', parent=styles['Normal_Custom'], leftIndent=20))
+    # Başlık stili: 11 punto, kalın
+    styles.add(ParagraphStyle(name='Heading1_Custom', fontName='DejaVuSans-Bold', 
+                              fontSize=11, leading=15, spaceAfter=10))
+    # Normal metin stili: 10 punto
+    styles.add(ParagraphStyle(name='Normal_Custom', fontName='DejaVuSans', 
+                              fontSize=10, leading=14, spaceAfter=6))
+    # Madde imli liste stili
+    styles.add(ParagraphStyle(name='Bullet_Custom', parent=styles['Normal_Custom'], 
+                              leftIndent=20))
 
     Story = []
 
+    # Üst ve alt bilgiyi her sayfaya ekleyen fonksiyon
     def header_footer(canvas, doc):
         canvas.saveState()
         canvas.setFont("DejaVuSans", 8)
-        canvas.drawString(A4[0] - 1.5*72, A4[1] - 50, f"{grade} - {unit} | QuickSheet v1.7")
-        canvas.drawCentredString(A4[0] / 2.0, 30, f"Sayfa {doc.page}")
+        # Üst bilgi
+        canvas.drawString(margin, A4[1] - margin + 0.5*cm, f"{grade} - {unit} | QuickSheet v1.7")
+        # Alt bilgi
+        canvas.drawCentredString(A4[0] / 2.0, 0.75 * cm, f"Sayfa {doc.page}")
         canvas.restoreState()
 
     lines = content.split('\n')
     for line in lines:
         line = line.strip()
-        if not line: continue
+        if not line:
+             # Boşlukları yönetmek için Spacer kullan
+             Story.append(Spacer(1, 4))
+             continue
 
-        # Markdown'dan ReportLab formatına dönüştürme
+        # Markdown'dan ReportLab formatına dönüştürme (sadece bold için)
         formatted_line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
 
         if line.startswith('# '):
             Story.append(Paragraph(formatted_line[2:], styles['Heading1_Custom']))
         elif line.startswith('- '):
-            p = Paragraph(f"• {formatted_line[2:]}", styles['Bullet_Custom'])
+            # Madde imleri için doğru formatlama
+            p_text = f"• {formatted_line[2:]}"
+            p = Paragraph(p_text, styles['Bullet_Custom'])
             Story.append(p)
         else:
             Story.append(Paragraph(formatted_line, styles['Normal_Custom']))
-        Story.append(Spacer(1, 8)) # Paragraflar arasına boşluk ekle
 
     doc.build(Story, onFirstPage=header_footer, onLaterPages=header_footer)
     buffer.seek(0)
@@ -352,30 +372,55 @@ def create_pdf(content, grade, unit):
 def create_docx(content):
     buffer = io.BytesIO()
     doc = Document()
-    doc.styles['Normal'].font.name = 'Calibri'
-    doc.styles['Normal'].font.size = Pt(11)
+    
+    # Kenar boşluklarını ayarla
+    section = doc.sections[0]
+    section.top_margin = Cm(1.27)
+    section.bottom_margin = Cm(1.27)
+    section.left_margin = Cm(1.27)
+    section.right_margin = Cm(1.27)
+
+    # Stilleri tanımla
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Calibri'
+    font.size = Pt(10) # Normal metin 10 punto
+
+    heading_style = doc.styles['Heading 1']
+    font = heading_style.font
+    font.name = 'Calibri'
+    font.size = Pt(11) # Başlık 11 punto
+    font.bold = True
 
     for line in content.split('\n'):
         line = line.strip()
         if not line:
-            # Boş satırları korumak için
+            # Boş satırları tek bir boş paragraf olarak ekle
+            if len(doc.paragraphs) > 0 and doc.paragraphs[-1].text == "":
+                continue
             doc.add_paragraph()
             continue
 
         if line.startswith('# '):
-            p = doc.add_paragraph(line[2:])
-            p.style = 'Heading 1'
+            p = doc.add_paragraph(line[2:], style='Heading 1')
+            # Başlık sonrası boşluğu ayarla
+            p.paragraph_format.space_after = Pt(6)
         elif line.startswith('- '):
             p = doc.add_paragraph(line[2:], style='List Bullet')
+            p.paragraph_format.space_after = Pt(2)
         else:
             p = doc.add_paragraph()
             # Satır içindeki kalın metinleri işle
             parts = re.split(r'(\*\*.*?\*\*)', line)
             for part in parts:
                 if part.startswith('**') and part.endswith('**'):
-                    p.add_run(part[2:-2]).bold = True
+                    run = p.add_run(part[2:-2])
+                    run.bold = True
+                    run.font.size = Pt(10)
                 else:
-                    p.add_run(part)
+                    run = p.add_run(part)
+                    run.font.size = Pt(10)
+            p.paragraph_format.space_after = Pt(6)
             
     doc.save(buffer)
     buffer.seek(0)
@@ -385,8 +430,15 @@ def create_docx(content):
 # ANA UYGULAMA AKIŞI
 # -----------------------------
 if st.button("✨ 1. Adım: Materyal Taslağını Oluştur", type="primary", use_container_width=True):
-    if skill_needed and not selected_topics:
-        st.warning("Lütfen en az bir alt konu seçin.")
+    # Seçilen ve özel girilen konuları birleştir
+    final_topics = []
+    if skill_needed:
+        final_topics.extend(selected_topics_from_list)
+        if custom_topics:
+            final_topics.extend([topic.strip() for topic in custom_topics.split(',') if topic.strip()])
+    
+    if skill_needed and not final_topics:
+        st.warning("Lütfen listeden en az bir alt konu seçin veya kendi konunuzu yazın.")
         st.stop()
     if selected_tool == "Günlük Ders Planı" and not st.session_state.lesson_context:
         st.warning("Lütfen 'Bugünkü Dersin Konusu' alanını doldurun.")
@@ -394,7 +446,7 @@ if st.button("✨ 1. Adım: Materyal Taslağını Oluştur", type="primary", use
 
     prompt_args = {
         "grade": selected_grade, "unit": selected_unit, "skill": selected_skill,
-        "topics": selected_topics, "clil": include_clil, "reflection": include_reflection,
+        "topics": final_topics, "clil": include_clil, "reflection": include_reflection,
         "language": plan_language
     }
     if selected_tool in ["Çalışma Sayfası", "Ünite Tekrar Testi"]:
