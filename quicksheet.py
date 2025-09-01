@@ -21,7 +21,7 @@ from datetime import date
 # -----------------------------
 st.set_page_config(page_title="QuickSheet v1.7: 9. Sınıf Asistanı", page_icon="⚡", layout="wide")
 st.title("⚡ Quicksheet v1.7: 9. Sınıf İngilizce Öğretmeni Asistanı")
-st.markdown("Ders hazırlığınızı dakikalara indirin: Maarif Modeline uygun, çeşitli materyaller üretin.")
+st.markdown("Maarif Modeli hedeflerine uygun, bütünleşik ders materyallerini dakikalar içinde hazırlayan akıllı asistanınız.")
 
 # Session State Başlatma
 if 'ai_content' not in st.session_state:
